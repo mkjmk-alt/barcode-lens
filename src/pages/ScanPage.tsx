@@ -1,8 +1,8 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { MainCard } from '../components/MainCard';
 import { RecentHistory } from '../components/RecentHistory';
-import { BarcodeScanner, scanImageFile } from '../utils/barcodeScanner';
-import type { ScanResult } from '../utils/barcodeScanner';
+import { createScanner, scanImageFile } from '../utils/barcodeScanner';
+import type { ScanResult, NativeBarcodeScanner, BarcodeScanner } from '../utils/barcodeScanner';
 import { generateBarcode, createA4Sheet, downloadImage } from '../utils/barcodeGenerator';
 import type { A4SheetOptions } from '../utils/barcodeGenerator';
 import {
@@ -38,7 +38,7 @@ export function ScanPage() {
     const [maxLabelLines] = useState(2);
     const [lineSpacing] = useState(4);
 
-    const scannerRef = useRef<BarcodeScanner | null>(null);
+    const scannerRef = useRef<NativeBarcodeScanner | BarcodeScanner | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handleScanResult = useCallback(async (result: ScanResult) => {
@@ -82,7 +82,7 @@ export function ScanPage() {
 
         // Wait for the container to be rendered
         setTimeout(async () => {
-            scannerRef.current = new BarcodeScanner('scanner-container');
+            scannerRef.current = createScanner('scanner-container');
             await scannerRef.current.start(
                 handleScanResult,
                 (err) => {

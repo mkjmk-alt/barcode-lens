@@ -5,6 +5,21 @@ export interface ScanResult {
     format: string;
 }
 
+// Check if native BarcodeDetector API is available
+declare global {
+    interface Window {
+        BarcodeDetector?: new (options?: { formats: string[] }) => BarcodeDetector;
+    }
+    interface BarcodeDetector {
+        detect(image: ImageBitmapSource): Promise<DetectedBarcode[]>;
+    }
+    interface DetectedBarcode {
+        rawValue: string;
+        format: string;
+        boundingBox: DOMRectReadOnly;
+    }
+}
+
 const SUPPORTED_FORMATS = [
     Html5QrcodeSupportedFormats.QR_CODE,
     Html5QrcodeSupportedFormats.CODE_128,
@@ -18,6 +33,25 @@ const SUPPORTED_FORMATS = [
     Html5QrcodeSupportedFormats.CODABAR
 ];
 
+// Native BarcodeDetector formats
+const NATIVE_FORMATS = [
+    'qr_code',
+    'code_128',
+    'code_39',
+    'ean_13',
+    'ean_8',
+    'upc_a',
+    'upc_e',
+    'data_matrix',
+    'itf',
+    'codabar'
+];
+
+// Check if native BarcodeDetector is supported
+export function isNativeBarcodeDetectorSupported(): boolean {
+    return 'BarcodeDetector' in window;
+}
+
 export async function scanFromImage(file: File): Promise<ScanResult | null> {
     const html5QrCode = new Html5Qrcode('temp-scanner', { verbose: false });
 
@@ -25,7 +59,7 @@ export async function scanFromImage(file: File): Promise<ScanResult | null> {
         const result = await html5QrCode.scanFile(file, true);
         return {
             text: result,
-            format: 'Unknown' // html5-qrcode doesn't provide format for file scans
+            format: 'Unknown'
         };
     } catch (error) {
         console.error('Scan error:', error);
@@ -33,6 +67,105 @@ export async function scanFromImage(file: File): Promise<ScanResult | null> {
     }
 }
 
+// Native BarcodeDetector based scanner - better performance on supported browsers
+export class NativeBarcodeScanner {
+    private stream: MediaStream | null = null;
+    private videoElement: HTMLVideoElement | null = null;
+    private detector: BarcodeDetector | null = null;
+    private animationFrameId: number | null = null;
+    private isScanning: boolean = false;
+    private containerId: string;
+
+    constructor(containerId: string) {
+        this.containerId = containerId;
+    }
+
+    async start(onScan: (result: ScanResult) => void, onError?: (error: string) => void): Promise<void> {
+        if (this.isScanning) return;
+
+        try {
+            // Create video element
+            const container = document.getElementById(this.containerId);
+            if (!container) {
+                onError?.('스캐너 컨테이너를 찾을 수 없습니다.');
+                return;
+            }
+
+            this.videoElement = document.createElement('video');
+            this.videoElement.style.width = '100%';
+            this.videoElement.style.height = '100%';
+            this.videoElement.style.objectFit = 'cover';
+            this.videoElement.setAttribute('playsinline', 'true');
+            this.videoElement.setAttribute('autoplay', 'true');
+            container.appendChild(this.videoElement);
+
+            // Get camera stream (back camera)
+            this.stream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
+            });
+
+            this.videoElement.srcObject = this.stream;
+            await this.videoElement.play();
+
+            // Create BarcodeDetector
+            this.detector = new window.BarcodeDetector!({ formats: NATIVE_FORMATS });
+
+            this.isScanning = true;
+
+            // Start scanning loop
+            const scan = async () => {
+                if (!this.isScanning || !this.videoElement || !this.detector) return;
+
+                try {
+                    const barcodes = await this.detector.detect(this.videoElement);
+                    if (barcodes.length > 0) {
+                        const barcode = barcodes[0];
+                        onScan({
+                            text: barcode.rawValue,
+                            format: barcode.format.toUpperCase()
+                        });
+                        return; // Stop after successful scan
+                    }
+                } catch (err) {
+                    // Ignore detection errors
+                }
+
+                this.animationFrameId = requestAnimationFrame(scan);
+            };
+
+            this.animationFrameId = requestAnimationFrame(scan);
+
+        } catch (error) {
+            console.error('Native scanner start error:', error);
+            onError?.(error instanceof Error ? error.message : '카메라 시작 실패');
+        }
+    }
+
+    async stop(): Promise<void> {
+        this.isScanning = false;
+
+        if (this.animationFrameId) {
+            cancelAnimationFrame(this.animationFrameId);
+            this.animationFrameId = null;
+        }
+
+        if (this.stream) {
+            this.stream.getTracks().forEach(track => track.stop());
+            this.stream = null;
+        }
+
+        if (this.videoElement) {
+            this.videoElement.remove();
+            this.videoElement = null;
+        }
+    }
+
+    getIsScanning(): boolean {
+        return this.isScanning;
+    }
+}
+
+// Fallback scanner using html5-qrcode
 export class BarcodeScanner {
     private html5QrCode: Html5Qrcode | null = null;
     private containerId: string;
@@ -51,7 +184,7 @@ export class BarcodeScanner {
                 formatsToSupport: SUPPORTED_FORMATS
             });
 
-            // Use facingMode constraint for back camera (environment = back, user = front)
+            // Use facingMode constraint for back camera
             await this.html5QrCode.start(
                 { facingMode: "environment" },
                 {
@@ -92,8 +225,37 @@ export class BarcodeScanner {
     }
 }
 
+// Smart scanner factory - uses native when available, fallback otherwise
+export function createScanner(containerId: string): NativeBarcodeScanner | BarcodeScanner {
+    if (isNativeBarcodeDetectorSupported()) {
+        console.log('Using native BarcodeDetector API');
+        return new NativeBarcodeScanner(containerId);
+    } else {
+        console.log('Falling back to html5-qrcode');
+        return new BarcodeScanner(containerId);
+    }
+}
+
 export async function scanImageFile(file: File): Promise<ScanResult | null> {
-    // Create a temporary container
+    // Try native BarcodeDetector first
+    if (isNativeBarcodeDetectorSupported()) {
+        try {
+            const bitmap = await createImageBitmap(file);
+            const detector = new window.BarcodeDetector!({ formats: NATIVE_FORMATS });
+            const barcodes = await detector.detect(bitmap);
+
+            if (barcodes.length > 0) {
+                return {
+                    text: barcodes[0].rawValue,
+                    format: barcodes[0].format.toUpperCase()
+                };
+            }
+        } catch (error) {
+            console.error('Native image scan error:', error);
+        }
+    }
+
+    // Fallback to html5-qrcode
     const tempContainer = document.createElement('div');
     tempContainer.id = 'temp-scanner-' + Date.now();
     tempContainer.style.display = 'none';
