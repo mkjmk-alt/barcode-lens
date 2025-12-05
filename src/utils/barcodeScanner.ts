@@ -237,10 +237,13 @@ export function createScanner(containerId: string): NativeBarcodeScanner | Barco
 }
 
 export async function scanImageFile(file: File): Promise<ScanResult | null> {
+    // Resize image for better performance on mobile
+    const resizedBlob = await resizeImageForScanning(file);
+
     // Try native BarcodeDetector first
     if (isNativeBarcodeDetectorSupported()) {
         try {
-            const bitmap = await createImageBitmap(file);
+            const bitmap = await createImageBitmap(resizedBlob);
             const detector = new window.BarcodeDetector!({ formats: NATIVE_FORMATS });
             const barcodes = await detector.detect(bitmap);
 
@@ -267,7 +270,9 @@ export async function scanImageFile(file: File): Promise<ScanResult | null> {
     });
 
     try {
-        const result = await html5QrCode.scanFile(file, true);
+        // Convert blob to file for html5-qrcode
+        const resizedFile = new File([resizedBlob], file.name, { type: 'image/jpeg' });
+        const result = await html5QrCode.scanFile(resizedFile, true);
         return {
             text: result,
             format: 'Detected'
@@ -280,3 +285,61 @@ export async function scanImageFile(file: File): Promise<ScanResult | null> {
         document.body.removeChild(tempContainer);
     }
 }
+
+// Resize image for better scanning performance on mobile
+async function resizeImageForScanning(file: File): Promise<Blob> {
+    const MAX_WIDTH = 1280;
+    const MAX_HEIGHT = 1280;
+
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => {
+            let { width, height } = img;
+
+            // Calculate new dimensions
+            if (width > MAX_WIDTH || height > MAX_HEIGHT) {
+                const ratio = Math.min(MAX_WIDTH / width, MAX_HEIGHT / height);
+                width = Math.round(width * ratio);
+                height = Math.round(height * ratio);
+            }
+
+            // Create canvas and draw resized image
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+
+            const ctx = canvas.getContext('2d');
+            if (!ctx) {
+                reject(new Error('Failed to get canvas context'));
+                return;
+            }
+
+            // Handle image orientation (EXIF)
+            ctx.drawImage(img, 0, 0, width, height);
+
+            // Convert to blob
+            canvas.toBlob(
+                (blob) => {
+                    if (blob) {
+                        resolve(blob);
+                    } else {
+                        reject(new Error('Failed to create blob'));
+                    }
+                },
+                'image/jpeg',
+                0.9
+            );
+        };
+
+        img.onerror = () => reject(new Error('Failed to load image'));
+
+        // Read file as data URL
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            img.src = e.target?.result as string;
+        };
+        reader.onerror = () => reject(new Error('Failed to read file'));
+        reader.readAsDataURL(file);
+    });
+}
+
