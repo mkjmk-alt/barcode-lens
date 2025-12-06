@@ -381,21 +381,111 @@ async function resizeImageForScanning(file: File): Promise<{ blob: Blob; dataUrl
             ctx.imageSmoothingQuality = 'high';
             ctx.drawImage(currentSource, 0, 0, targetWidth, targetHeight);
 
-            // Get data URL for preview
-            const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+            // Apply contrast enhancement and sharpening for better barcode recognition
+            const imageData = ctx.getImageData(0, 0, targetWidth, targetHeight);
+            const data = imageData.data;
 
-            // Convert to blob
-            canvas.toBlob(
-                (blob) => {
-                    if (blob) {
-                        resolve({ blob, dataUrl });
-                    } else {
-                        reject(new Error('Failed to create blob'));
+            // Contrast enhancement (increase difference between light and dark)
+            const contrastFactor = 1.3; // 1.0 = no change, >1.0 = more contrast
+            const contrastOffset = 128 * (1 - contrastFactor);
+
+            for (let i = 0; i < data.length; i += 4) {
+                // Apply contrast to RGB channels
+                data[i] = Math.min(255, Math.max(0, data[i] * contrastFactor + contrastOffset));     // R
+                data[i + 1] = Math.min(255, Math.max(0, data[i + 1] * contrastFactor + contrastOffset)); // G
+                data[i + 2] = Math.min(255, Math.max(0, data[i + 2] * contrastFactor + contrastOffset)); // B
+                // Alpha channel (i+3) unchanged
+            }
+
+            ctx.putImageData(imageData, 0, 0);
+
+            // Apply simple sharpening using convolution
+            const sharpenedCanvas = document.createElement('canvas');
+            sharpenedCanvas.width = targetWidth;
+            sharpenedCanvas.height = targetHeight;
+            const sharpCtx = sharpenedCanvas.getContext('2d');
+
+            if (sharpCtx) {
+                // Get contrasted image data
+                const srcData = ctx.getImageData(0, 0, targetWidth, targetHeight);
+                const dstData = sharpCtx.createImageData(targetWidth, targetHeight);
+                const src = srcData.data;
+                const dst = dstData.data;
+
+                // Sharpening kernel: center = 5, neighbors = -1 (simple unsharp)
+                const strength = 0.3; // 0.0 = no sharpening, 1.0 = full sharpening
+
+                for (let y = 1; y < targetHeight - 1; y++) {
+                    for (let x = 1; x < targetWidth - 1; x++) {
+                        const idx = (y * targetWidth + x) * 4;
+
+                        for (let c = 0; c < 3; c++) { // RGB only
+                            const center = src[idx + c];
+                            const top = src[((y - 1) * targetWidth + x) * 4 + c];
+                            const bottom = src[((y + 1) * targetWidth + x) * 4 + c];
+                            const left = src[(y * targetWidth + (x - 1)) * 4 + c];
+                            const right = src[(y * targetWidth + (x + 1)) * 4 + c];
+
+                            // Unsharp mask: sharpened = original + strength * (original - blurred)
+                            const blurred = (top + bottom + left + right) / 4;
+                            const sharpened = center + strength * (center - blurred);
+
+                            dst[idx + c] = Math.min(255, Math.max(0, sharpened));
+                        }
+                        dst[idx + 3] = 255; // Alpha
                     }
-                },
-                'image/jpeg',
-                0.92
-            );
+                }
+
+                // Copy edges without sharpening
+                for (let x = 0; x < targetWidth; x++) {
+                    const topIdx = x * 4;
+                    const bottomIdx = ((targetHeight - 1) * targetWidth + x) * 4;
+                    for (let c = 0; c < 4; c++) {
+                        dst[topIdx + c] = src[topIdx + c];
+                        dst[bottomIdx + c] = src[bottomIdx + c];
+                    }
+                }
+                for (let y = 0; y < targetHeight; y++) {
+                    const leftIdx = (y * targetWidth) * 4;
+                    const rightIdx = (y * targetWidth + targetWidth - 1) * 4;
+                    for (let c = 0; c < 4; c++) {
+                        dst[leftIdx + c] = src[leftIdx + c];
+                        dst[rightIdx + c] = src[rightIdx + c];
+                    }
+                }
+
+                sharpCtx.putImageData(dstData, 0, 0);
+
+                // Get data URL from sharpened canvas
+                const dataUrl = sharpenedCanvas.toDataURL('image/jpeg', 0.92);
+
+                // Convert to blob
+                sharpenedCanvas.toBlob(
+                    (blob) => {
+                        if (blob) {
+                            resolve({ blob, dataUrl });
+                        } else {
+                            reject(new Error('Failed to create blob'));
+                        }
+                    },
+                    'image/jpeg',
+                    0.92
+                );
+            } else {
+                // Fallback if sharpening canvas fails
+                const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+                canvas.toBlob(
+                    (blob) => {
+                        if (blob) {
+                            resolve({ blob, dataUrl });
+                        } else {
+                            reject(new Error('Failed to create blob'));
+                        }
+                    },
+                    'image/jpeg',
+                    0.92
+                );
+            }
         };
 
         img.onerror = () => reject(new Error('Failed to load image'));
