@@ -347,10 +347,10 @@ export function GeneratePage() {
                             이미지 다운로드
                         </button>
                         <button className="btn btn-outline" onClick={handleCreateA4Sheet}>
-                            A4 시트 (PNG)
+                            A4 시트 {rows * cols}장 (PNG)
                         </button>
                         <button className="btn btn-outline" onClick={handleCreateA4SheetPDF}>
-                            📄 PDF 다운로드 (LS-3102)
+                            📄 PDF {rows * cols}장 (LS-3102)
                         </button>
                     </>
                 )}
