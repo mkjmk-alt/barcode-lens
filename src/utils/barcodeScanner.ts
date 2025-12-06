@@ -1,4 +1,5 @@
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
+import { BrowserMultiFormatReader, BarcodeFormat, DecodeHintType } from '@zxing/library';
 
 export interface ScanResult {
     text: string;
@@ -57,6 +58,28 @@ const NATIVE_FORMATS = [
     'itf',
     'codabar'
 ];
+
+// ZXing formats to decode
+const ZXING_FORMATS = [
+    BarcodeFormat.QR_CODE,
+    BarcodeFormat.CODE_128,
+    BarcodeFormat.CODE_39,
+    BarcodeFormat.EAN_13,
+    BarcodeFormat.EAN_8,
+    BarcodeFormat.UPC_A,
+    BarcodeFormat.UPC_E,
+    BarcodeFormat.DATA_MATRIX,
+    BarcodeFormat.ITF,
+    BarcodeFormat.CODABAR
+];
+
+// Create ZXing reader with hints
+function createZXingReader(): BrowserMultiFormatReader {
+    const hints = new Map();
+    hints.set(DecodeHintType.POSSIBLE_FORMATS, ZXING_FORMATS);
+    hints.set(DecodeHintType.TRY_HARDER, true);
+    return new BrowserMultiFormatReader(hints);
+}
 
 // Check if native BarcodeDetector is supported
 export function isNativeBarcodeDetectorSupported(): boolean {
@@ -248,17 +271,56 @@ export function createScanner(containerId: string): NativeBarcodeScanner | Barco
 }
 
 export async function scanImageFile(file: File): Promise<ImageScanResponse> {
-    // Resize image for better performance on mobile
-    const { blob: resizedBlob, dataUrl: resizedImageUrl } = await resizeImageForScanning(file);
+    // Process image with contrast enhancement
+    const { blob: processedBlob, dataUrl: resizedImageUrl } = await resizeImageForScanning(file);
 
-    // Try native BarcodeDetector first
+    // Multi-scale factors to try (from smaller to larger for speed)
+    const scales = [1.0, 0.75, 1.25, 0.5, 1.5];
+
+    // Try ZXing first with multiple scales
+    const zxingReader = createZXingReader();
+
+    for (const scale of scales) {
+        try {
+            const scaledBlob = scale === 1.0
+                ? processedBlob
+                : await rescaleBlob(processedBlob, scale);
+
+            const imageUrl = URL.createObjectURL(scaledBlob);
+
+            try {
+                const result = await zxingReader.decodeFromImageUrl(imageUrl);
+                URL.revokeObjectURL(imageUrl);
+
+                if (result) {
+                    console.log(`ZXing scan success at scale ${scale}`);
+                    return {
+                        success: true,
+                        result: {
+                            text: result.getText(),
+                            format: result.getBarcodeFormat().toString(),
+                            resizedImageUrl
+                        },
+                        resizedImageUrl
+                    };
+                }
+            } catch {
+                URL.revokeObjectURL(imageUrl);
+            }
+        } catch (error) {
+            console.log(`ZXing scan failed at scale ${scale}:`, error);
+        }
+    }
+
+    // Try native BarcodeDetector
     if (isNativeBarcodeDetectorSupported()) {
         try {
-            const bitmap = await createImageBitmap(resizedBlob);
+            const bitmap = await createImageBitmap(processedBlob);
             const detector = new window.BarcodeDetector!({ formats: NATIVE_FORMATS });
             const barcodes = await detector.detect(bitmap);
 
             if (barcodes.length > 0) {
+                console.log('Native BarcodeDetector success');
                 return {
                     success: true,
                     result: {
@@ -286,9 +348,9 @@ export async function scanImageFile(file: File): Promise<ImageScanResponse> {
     });
 
     try {
-        // Convert blob to file for html5-qrcode
-        const resizedFile = new File([resizedBlob], file.name, { type: 'image/jpeg' });
+        const resizedFile = new File([processedBlob], file.name, { type: 'image/jpeg' });
         const result = await html5QrCode.scanFile(resizedFile, true);
+        console.log('html5-qrcode success');
         return {
             success: true,
             result: {
@@ -299,8 +361,7 @@ export async function scanImageFile(file: File): Promise<ImageScanResponse> {
             resizedImageUrl
         };
     } catch (error) {
-        console.error('Image scan error:', error);
-        // Return failure with resized image still available
+        console.error('All scanners failed:', error);
         return {
             success: false,
             result: null,
@@ -311,6 +372,43 @@ export async function scanImageFile(file: File): Promise<ImageScanResponse> {
         document.body.removeChild(tempContainer);
     }
 }
+
+// Rescale blob to a different size
+async function rescaleBlob(blob: Blob, scale: number): Promise<Blob> {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = Math.round(img.width * scale);
+            canvas.height = Math.round(img.height * scale);
+
+            const ctx = canvas.getContext('2d');
+            if (!ctx) {
+                reject(new Error('Failed to get canvas context'));
+                return;
+            }
+
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+            canvas.toBlob(
+                (newBlob) => {
+                    if (newBlob) {
+                        resolve(newBlob);
+                    } else {
+                        reject(new Error('Failed to create blob'));
+                    }
+                },
+                'image/jpeg',
+                0.92
+            );
+        };
+        img.onerror = () => reject(new Error('Failed to load image'));
+        img.src = URL.createObjectURL(blob);
+    });
+}
+
 
 // Resize image for better scanning performance on mobile
 // Uses high-quality bicubic-like interpolation with multi-step downscaling
