@@ -293,6 +293,7 @@ export async function scanImageFile(file: File): Promise<ImageScanResult | null>
 }
 
 // Resize image for better scanning performance on mobile
+// Uses high-quality bicubic-like interpolation with multi-step downscaling
 async function resizeImageForScanning(file: File): Promise<{ blob: Blob; dataUrl: string }> {
     const MAX_WIDTH = 1280;
     const MAX_HEIGHT = 1280;
@@ -300,31 +301,68 @@ async function resizeImageForScanning(file: File): Promise<{ blob: Blob; dataUrl
     return new Promise((resolve, reject) => {
         const img = new Image();
         img.onload = () => {
-            let { width, height } = img;
+            let targetWidth = img.width;
+            let targetHeight = img.height;
 
-            // Calculate new dimensions
-            if (width > MAX_WIDTH || height > MAX_HEIGHT) {
-                const ratio = Math.min(MAX_WIDTH / width, MAX_HEIGHT / height);
-                width = Math.round(width * ratio);
-                height = Math.round(height * ratio);
+            // Calculate target dimensions while maintaining aspect ratio
+            if (targetWidth > MAX_WIDTH || targetHeight > MAX_HEIGHT) {
+                const ratio = Math.min(MAX_WIDTH / targetWidth, MAX_HEIGHT / targetHeight);
+                targetWidth = Math.round(targetWidth * ratio);
+                targetHeight = Math.round(targetHeight * ratio);
             }
 
-            // Create canvas and draw resized image
+            // Use multi-step downscaling for better quality (Lanczos-like effect)
+            // Step down by half until we're close to target size
             const canvas = document.createElement('canvas');
-            canvas.width = width;
-            canvas.height = height;
-
             const ctx = canvas.getContext('2d');
+
             if (!ctx) {
                 reject(new Error('Failed to get canvas context'));
                 return;
             }
 
-            // Handle image orientation (EXIF)
-            ctx.drawImage(img, 0, 0, width, height);
+            // Enable high-quality image smoothing (bicubic-like interpolation)
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+
+            let currentWidth = img.width;
+            let currentHeight = img.height;
+            let currentSource: CanvasImageSource = img;
+
+            // Multi-step downscaling: step down by 50% at a time for better quality
+            // This mimics Lanczos algorithm behavior by avoiding extreme scaling in one step
+            while (currentWidth > targetWidth * 2 || currentHeight > targetHeight * 2) {
+                const stepWidth = Math.round(currentWidth / 2);
+                const stepHeight = Math.round(currentHeight / 2);
+
+                const stepCanvas = document.createElement('canvas');
+                stepCanvas.width = stepWidth;
+                stepCanvas.height = stepHeight;
+
+                const stepCtx = stepCanvas.getContext('2d');
+                if (!stepCtx) {
+                    reject(new Error('Failed to get step canvas context'));
+                    return;
+                }
+
+                stepCtx.imageSmoothingEnabled = true;
+                stepCtx.imageSmoothingQuality = 'high';
+                stepCtx.drawImage(currentSource, 0, 0, stepWidth, stepHeight);
+
+                currentSource = stepCanvas;
+                currentWidth = stepWidth;
+                currentHeight = stepHeight;
+            }
+
+            // Final resize to target dimensions
+            canvas.width = targetWidth;
+            canvas.height = targetHeight;
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            ctx.drawImage(currentSource, 0, 0, targetWidth, targetHeight);
 
             // Get data URL for preview
-            const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
 
             // Convert to blob
             canvas.toBlob(
@@ -336,7 +374,7 @@ async function resizeImageForScanning(file: File): Promise<{ blob: Blob; dataUrl
                     }
                 },
                 'image/jpeg',
-                0.9
+                0.92
             );
         };
 
