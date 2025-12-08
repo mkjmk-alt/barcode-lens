@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import {
     generateBarcode,
+    generateQRCode,
     createA4Sheet,
     createA4SheetPDF,
     downloadImage,
     LS_3102_PRESET
 } from '../utils/barcodeGenerator';
-import type { BarcodeType, A4SheetOptions, A4SheetPDFOptions } from '../utils/barcodeGenerator';
+import type { BarcodeType, A4SheetOptions, A4SheetPDFOptions, QRErrorCorrectionLevel } from '../utils/barcodeGenerator';
 import { removeWhitespaceSpecial } from '../utils/helpers';
 import './GeneratePage.css';
 
@@ -41,6 +42,13 @@ export function GeneratePage() {
     const [hMargin, setHMargin] = useState(47);
     const [vMargin, setVMargin] = useState(18);
 
+    // QR Code advanced options
+    const [qrErrorLevel, setQrErrorLevel] = useState<QRErrorCorrectionLevel>('M');
+    const [qrMaskPattern, setQrMaskPattern] = useState<number | undefined>(undefined);
+    const [qrVersion, setQrVersion] = useState<number | undefined>(undefined);
+    const [qrDarkColor, setQrDarkColor] = useState('#000000');
+    const [qrLightColor, setQrLightColor] = useState('#ffffff');
+
     const handleGenerate = async () => {
         if (!inputText.trim()) {
             setError('바코드 내용을 입력해주세요.');
@@ -50,7 +58,22 @@ export function GeneratePage() {
         setError('');
         const content = removeSpecial ? removeWhitespaceSpecial(inputText) : inputText;
 
-        const img = await generateBarcode(content, barcodeType, { fontSize: barcodeFontSize });
+        let img: string | null = null;
+
+        if (barcodeType === 'QR') {
+            // Use advanced QR code options
+            img = await generateQRCode(content, {
+                width: 250,
+                margin: 2,
+                errorCorrectionLevel: qrErrorLevel,
+                maskPattern: qrMaskPattern as 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | undefined,
+                version: qrVersion,
+                darkColor: qrDarkColor,
+                lightColor: qrLightColor
+            });
+        } else {
+            img = await generateBarcode(content, barcodeType, { fontSize: barcodeFontSize });
+        }
 
         if (img) {
             setBarcodeImage(img);
@@ -187,6 +210,81 @@ export function GeneratePage() {
                     </label>
                 </div>
             </section>
+
+            {barcodeType === 'QR' && (
+                <section className="section glass-card">
+                    <h3 className="section-title">QR 코드 설정</h3>
+
+                    <div className="grid grid-2">
+                        <div className="form-group">
+                            <label className="label">오류 정정 레벨</label>
+                            <select
+                                className="select"
+                                value={qrErrorLevel}
+                                onChange={(e) => setQrErrorLevel(e.target.value as QRErrorCorrectionLevel)}
+                            >
+                                <option value="L">L (7% 복구)</option>
+                                <option value="M">M (15% 복구)</option>
+                                <option value="Q">Q (25% 복구)</option>
+                                <option value="H">H (30% 복구)</option>
+                            </select>
+                        </div>
+                        <div className="form-group">
+                            <label className="label">마스크 패턴</label>
+                            <select
+                                className="select"
+                                value={qrMaskPattern ?? 'auto'}
+                                onChange={(e) => setQrMaskPattern(e.target.value === 'auto' ? undefined : Number(e.target.value))}
+                            >
+                                <option value="auto">자동</option>
+                                <option value="0">패턴 0</option>
+                                <option value="1">패턴 1</option>
+                                <option value="2">패턴 2</option>
+                                <option value="3">패턴 3</option>
+                                <option value="4">패턴 4</option>
+                                <option value="5">패턴 5</option>
+                                <option value="6">패턴 6</option>
+                                <option value="7">패턴 7</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div className="form-group">
+                        <label className="label">QR 버전 (크기): {qrVersion ?? '자동'}</label>
+                        <input
+                            type="range"
+                            className="slider"
+                            value={qrVersion ?? 0}
+                            onChange={(e) => setQrVersion(Number(e.target.value) === 0 ? undefined : Number(e.target.value))}
+                            min={0} max={40}
+                        />
+                        <span className="text-sm text-muted">0 = 자동, 1~40 = 고정</span>
+                    </div>
+
+                    <div className="grid grid-2">
+                        <div className="form-group">
+                            <label className="label">전경색 (바코드)</label>
+                            <input
+                                type="color"
+                                className="input"
+                                value={qrDarkColor}
+                                onChange={(e) => setQrDarkColor(e.target.value)}
+                                style={{ height: '40px', padding: '2px' }}
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label className="label">배경색</label>
+                            <input
+                                type="color"
+                                className="input"
+                                value={qrLightColor}
+                                onChange={(e) => setQrLightColor(e.target.value)}
+                                style={{ height: '40px', padding: '2px' }}
+                            />
+                        </div>
+                    </div>
+                </section>
+            )}
 
             <section className="section glass-card">
                 <h3 className="section-title">글꼴 설정</h3>

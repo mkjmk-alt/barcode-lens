@@ -50,21 +50,55 @@ export async function generateBarcode(
     }
 }
 
+// QR Code error correction levels
+export type QRErrorCorrectionLevel = 'L' | 'M' | 'Q' | 'H';
+
+// QR Code advanced options interface
+export interface QRCodeOptions {
+    width?: number;
+    margin?: number;
+    errorCorrectionLevel?: QRErrorCorrectionLevel;
+    maskPattern?: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
+    version?: number; // 1-40
+    darkColor?: string;
+    lightColor?: string;
+}
+
+
 export async function generateQRCode(
     content: string,
-    options: { width?: number; margin?: number } = {}
+    options: QRCodeOptions = {}
 ): Promise<string | null> {
-    const { width = 250, margin = 2 } = options;
+    const {
+        width = 250,
+        margin = 2,
+        errorCorrectionLevel = 'M',
+        maskPattern,
+        version,
+        darkColor = '#000000',
+        lightColor = '#ffffff'
+    } = options;
 
     try {
-        const dataUrl = await QRCode.toDataURL(content, {
+        const qrOptions: QRCode.QRCodeToDataURLOptions = {
             width,
             margin,
+            errorCorrectionLevel,
             color: {
-                dark: '#000000',
-                light: '#ffffff'
+                dark: darkColor,
+                light: lightColor
             }
-        });
+        };
+
+        // Add optional parameters if specified
+        if (maskPattern !== undefined) {
+            qrOptions.maskPattern = maskPattern;
+        }
+        if (version !== undefined) {
+            qrOptions.version = version;
+        }
+
+        const dataUrl = await QRCode.toDataURL(content, qrOptions);
         return dataUrl;
     } catch (error) {
         console.error('QR generation error:', error);
