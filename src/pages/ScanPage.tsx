@@ -23,6 +23,7 @@ export function ScanPage() {
     const [error, setError] = useState<string>('');
     const [historyRefresh, setHistoryRefresh] = useState(0);
     const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+    const [cameraResolution, setCameraResolution] = useState<string>('');
 
     // A4 Sheet options
     const [showA4Options, setShowA4Options] = useState(false);
@@ -80,6 +81,7 @@ export function ScanPage() {
         setBarcodeImage(null);
         setNormalizedBarcodeImage(null);
         setIsScanning(true);
+        setCameraResolution('');
 
         // Wait for the container to be rendered
         setTimeout(async () => {
@@ -91,6 +93,14 @@ export function ScanPage() {
                     setIsScanning(false);
                 }
             );
+
+            // Get video resolution after scanning starts
+            setTimeout(() => {
+                const video = document.querySelector('#scanner-container video') as HTMLVideoElement;
+                if (video && video.videoWidth && video.videoHeight) {
+                    setCameraResolution(`${video.videoWidth} × ${video.videoHeight}`);
+                }
+            }, 500);
         }, 100);
     };
 
@@ -220,6 +230,11 @@ export function ScanPage() {
                     <button className="btn btn-outline mt-2" onClick={stopCameraScan}>
                         스캔 중지
                     </button>
+                    {cameraResolution && (
+                        <p className="text-center text-sm text-muted mt-1">
+                            📷 해상도: {cameraResolution}
+                        </p>
+                    )}
                 </div>
             )}
 
