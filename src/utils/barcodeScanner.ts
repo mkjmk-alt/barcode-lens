@@ -230,20 +230,15 @@ export class BarcodeScanner {
                 formatsToSupport: SUPPORTED_FORMATS
             });
 
-            // Try FHD resolution first
-            const fhdConstraints = {
-                facingMode: "environment",
-                aspectRatio: 1.777778  // 16:9 aspect ratio
-            };
-
-            // Fallback constraints for Safari and older browsers
-            const fallbackConstraints = {
-                facingMode: "environment"
-            };
-
+            // Config with videoConstraints for iOS Safari 1920x1080 support
             const scanConfig = {
                 fps: 10,
-                qrbox: { width: 250, height: 250 }
+                qrbox: { width: 250, height: 250 },
+                videoConstraints: {
+                    width: { ideal: 1920 },
+                    height: { ideal: 1080 },
+                    facingMode: "environment"
+                }
             };
 
             const successCallback = (decodedText: string, decodedResult: { result: { format?: { formatName?: string } } }) => {
@@ -254,15 +249,15 @@ export class BarcodeScanner {
             };
 
             try {
-                // Try with FHD settings first
+                // Try with FHD videoConstraints in config
                 await this.html5QrCode.start(
-                    fhdConstraints,
+                    { facingMode: "environment" },
                     scanConfig,
                     successCallback,
                     () => { }
                 );
             } catch {
-                // Fallback for Safari or unsupported browsers
+                // Fallback for unsupported browsers - without videoConstraints
                 console.log('FHD failed, trying fallback constraints');
                 if (this.html5QrCode) {
                     try { await this.html5QrCode.stop(); } catch { /* ignore */ }
@@ -274,9 +269,14 @@ export class BarcodeScanner {
                     formatsToSupport: SUPPORTED_FORMATS
                 });
 
+                const fallbackConfig = {
+                    fps: 10,
+                    qrbox: { width: 250, height: 250 }
+                };
+
                 await this.html5QrCode.start(
-                    fallbackConstraints,
-                    scanConfig,
+                    { facingMode: "environment" },
+                    fallbackConfig,
                     successCallback,
                     () => { }
                 );
