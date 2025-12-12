@@ -25,6 +25,11 @@ export function ScanPage() {
     const [uploadedImage, setUploadedImage] = useState<string | null>(null);
     const [cameraResolution, setCameraResolution] = useState<string>('');
 
+    // Camera scan mode: photo capture or realtime
+    const [isPhotoMode, setIsPhotoMode] = useState(false);
+    const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null);
+    const streamRef = useRef<MediaStream | null>(null);
+
     // A4 Sheet options
     const [showA4Options, setShowA4Options] = useState(false);
     const [productName, setProductName] = useState('');
@@ -109,6 +114,102 @@ export function ScanPage() {
             await scannerRef.current.stop();
             setIsScanning(false);
         }
+    };
+
+    // Photo capture mode functions
+    const startPhotoMode = async () => {
+        setError('');
+        setScanResult(null);
+        setBarcodeImage(null);
+        setNormalizedBarcodeImage(null);
+        setCapturedPhoto(null);
+        setIsPhotoMode(true);
+        setCameraResolution('');
+
+        try {
+            // Try 1920x1080 first, fallback for Safari
+            let stream: MediaStream;
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        facingMode: 'environment',
+                        width: { ideal: 1920 },
+                        height: { ideal: 1080 }
+                    }
+                });
+            } catch {
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: 'environment' }
+                });
+            }
+
+            streamRef.current = stream;
+
+            // Wait for DOM to render
+            setTimeout(() => {
+                const video = document.getElementById('photo-video') as HTMLVideoElement;
+                if (video) {
+                    video.srcObject = stream;
+                    video.play();
+
+                    // Show resolution after video starts
+                    setTimeout(() => {
+                        if (video.videoWidth && video.videoHeight) {
+                            setCameraResolution(`${video.videoWidth} × ${video.videoHeight}`);
+                        }
+                    }, 500);
+                }
+            }, 100);
+        } catch (err) {
+            setError('카메라 시작 실패');
+            setIsPhotoMode(false);
+        }
+    };
+
+    const capturePhoto = () => {
+        const video = document.getElementById('photo-video') as HTMLVideoElement;
+        if (!video) return;
+
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        ctx.drawImage(video, 0, 0);
+        const photoDataUrl = canvas.toDataURL('image/png');
+        setCapturedPhoto(photoDataUrl);
+    };
+
+    const scanCapturedPhoto = async () => {
+        if (!capturedPhoto) return;
+
+        setError('');
+
+        // Convert data URL to File
+        const response = await fetch(capturedPhoto);
+        const blob = await response.blob();
+        const file = new File([blob], 'captured.png', { type: 'image/png' });
+
+        const result = await scanImageFile(file);
+
+        if (result.success && result.result) {
+            handleScanResult(result.result);
+            stopPhotoMode();
+        } else {
+            setError('바코드를 인식하지 못했습니다. 다시 촬영해주세요.');
+            setCapturedPhoto(null); // Allow retry
+        }
+    };
+
+    const stopPhotoMode = () => {
+        if (streamRef.current) {
+            streamRef.current.getTracks().forEach(track => track.stop());
+            streamRef.current = null;
+        }
+        setCapturedPhoto(null);
+        setIsPhotoMode(false);
+        setCameraResolution('');
     };
 
     const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -211,10 +312,11 @@ export function ScanPage() {
                 style={{ display: 'none' }}
             />
 
-            {!isScanning && !scanResult && (
+            {!isScanning && !isPhotoMode && !scanResult && (
                 <>
                     <MainCard
                         onCameraScan={startCameraScan}
+                        onPhotoCapture={startPhotoMode}
                         onImageUpload={() => fileInputRef.current?.click()}
                     />
                     <RecentHistory
@@ -235,6 +337,54 @@ export function ScanPage() {
                             📷 해상도: {cameraResolution}
                         </p>
                     )}
+                </div>
+            )}
+
+            {isPhotoMode && !capturedPhoto && (
+                <div className="scanner-section animate-fadeIn">
+                    <h3 className="section-title">📸 사진 촬영 모드</h3>
+                    <video
+                        id="photo-video"
+                        autoPlay
+                        playsInline
+                        className="scanner-container"
+                        style={{ width: '100%', maxHeight: '400px', objectFit: 'cover', borderRadius: '12px' }}
+                    />
+                    <div className="action-buttons mt-2">
+                        <button className="btn btn-primary" onClick={capturePhoto}>
+                            📷 촬영
+                        </button>
+                        <button className="btn btn-outline" onClick={stopPhotoMode}>
+                            취소
+                        </button>
+                    </div>
+                    {cameraResolution && (
+                        <p className="text-center text-sm text-muted mt-1">
+                            📷 해상도: {cameraResolution}
+                        </p>
+                    )}
+                </div>
+            )}
+
+            {isPhotoMode && capturedPhoto && (
+                <div className="scanner-section animate-fadeIn">
+                    <h3 className="section-title">📸 촬영된 사진</h3>
+                    <img
+                        src={capturedPhoto}
+                        alt="Captured"
+                        style={{ width: '100%', maxHeight: '400px', objectFit: 'contain', borderRadius: '12px' }}
+                    />
+                    <div className="action-buttons mt-2">
+                        <button className="btn btn-primary" onClick={scanCapturedPhoto}>
+                            🔍 바코드 스캔
+                        </button>
+                        <button className="btn btn-outline" onClick={() => setCapturedPhoto(null)}>
+                            다시 촬영
+                        </button>
+                        <button className="btn btn-outline" onClick={stopPhotoMode}>
+                            취소
+                        </button>
+                    </div>
                 </div>
             )}
 

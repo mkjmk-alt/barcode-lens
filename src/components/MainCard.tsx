@@ -2,10 +2,11 @@ import './MainCard.css';
 
 interface MainCardProps {
     onCameraScan: () => void;
+    onPhotoCapture: () => void;
     onImageUpload: () => void;
 }
 
-export function MainCard({ onCameraScan, onImageUpload }: MainCardProps) {
+export function MainCard({ onCameraScan, onPhotoCapture, onImageUpload }: MainCardProps) {
     return (
         <div className="main-card gradient-card">
             <h2 className="main-card-title">무엇을 스캔할까요?</h2>
@@ -20,7 +21,16 @@ export function MainCard({ onCameraScan, onImageUpload }: MainCardProps) {
                         <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
                         <circle cx="12" cy="13" r="4" />
                     </svg>
-                    카메라 스캔
+                    실시간 스캔
+                </button>
+
+                <button className="btn btn-secondary" onClick={onPhotoCapture}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                        <circle cx="12" cy="12" r="3" />
+                        <path d="M12 2v4M12 18v4M2 12h4M18 12h4" />
+                    </svg>
+                    사진 촬영
                 </button>
 
                 <button className="btn btn-primary" onClick={onImageUpload}>
