@@ -219,16 +219,17 @@ export class BarcodeScanner {
             });
 
             await this.html5QrCode.start(
-                { facingMode: "environment" },
+                {
+                    facingMode: "environment",
+                    advanced: [
+                        { width: { min: 1280, ideal: 1920, max: 1920 } },
+                        { height: { min: 720, ideal: 1080, max: 1080 } }
+                    ]
+                },
                 {
                     fps: 10,
                     qrbox: { width: 250, height: 250 },
-                    aspectRatio: 1.777,  // 16:9 for 1920x1080
-                    videoConstraints: {
-                        facingMode: "environment",
-                        width: { ideal: 1920 },
-                        height: { ideal: 1080 }
-                    }
+                    aspectRatio: 1.777  // 16:9 for 1920x1080
                 },
                 (decodedText, decodedResult) => {
                     onScan({
