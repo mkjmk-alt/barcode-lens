@@ -218,20 +218,57 @@ export class BarcodeScanner {
                 formatsToSupport: SUPPORTED_FORMATS
             });
 
-            await this.html5QrCode.start(
-                { facingMode: "environment" },
-                {
-                    fps: 10,
-                    qrbox: { width: 250, height: 250 }
-                },
-                (decodedText, decodedResult) => {
-                    onScan({
-                        text: decodedText,
-                        format: decodedResult.result.format?.formatName || 'Unknown'
-                    });
-                },
-                () => { } // Ignore scan failures
-            );
+            // Try FHD resolution first
+            const fhdConstraints = {
+                facingMode: "environment",
+                aspectRatio: 1.777778  // 16:9 aspect ratio
+            };
+
+            // Fallback constraints for Safari and older browsers
+            const fallbackConstraints = {
+                facingMode: "environment"
+            };
+
+            const scanConfig = {
+                fps: 10,
+                qrbox: { width: 250, height: 250 }
+            };
+
+            const successCallback = (decodedText: string, decodedResult: { result: { format?: { formatName?: string } } }) => {
+                onScan({
+                    text: decodedText,
+                    format: decodedResult.result.format?.formatName || 'Unknown'
+                });
+            };
+
+            try {
+                // Try with FHD settings first
+                await this.html5QrCode.start(
+                    fhdConstraints,
+                    scanConfig,
+                    successCallback,
+                    () => { }
+                );
+            } catch {
+                // Fallback for Safari or unsupported browsers
+                console.log('FHD failed, trying fallback constraints');
+                if (this.html5QrCode) {
+                    try { await this.html5QrCode.stop(); } catch { /* ignore */ }
+                    this.html5QrCode.clear();
+                }
+
+                this.html5QrCode = new Html5Qrcode(this.containerId, {
+                    verbose: false,
+                    formatsToSupport: SUPPORTED_FORMATS
+                });
+
+                await this.html5QrCode.start(
+                    fallbackConstraints,
+                    scanConfig,
+                    successCallback,
+                    () => { }
+                );
+            }
 
             this.isScanning = true;
         } catch (error) {
