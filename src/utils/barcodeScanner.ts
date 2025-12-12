@@ -133,10 +133,22 @@ export class NativeBarcodeScanner {
             this.videoElement.setAttribute('autoplay', 'true');
             container.appendChild(this.videoElement);
 
-            // Get camera stream (back camera) - 1920x1080 resolution
-            this.stream = await navigator.mediaDevices.getUserMedia({
-                video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } }
-            });
+            // Try 1920x1080 first, fallback for Safari compatibility
+            try {
+                this.stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        facingMode: 'environment',
+                        width: { ideal: 1920 },
+                        height: { ideal: 1080 }
+                    }
+                });
+            } catch {
+                // Fallback for Safari or unsupported devices
+                console.log('1920x1080 failed, using fallback');
+                this.stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: 'environment' }
+                });
+            }
 
             this.videoElement.srcObject = this.stream;
             await this.videoElement.play();
