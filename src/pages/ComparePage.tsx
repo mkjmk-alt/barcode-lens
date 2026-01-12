@@ -268,13 +268,9 @@ export function ComparePage() {
                 throw new Error('바코드 생성에 실패했습니다. 인식된 텍스트가 선택한 바코드 형식에 맞지 않을 수 있습니다.');
             }
 
-            // Get generated barcode dimensions for auto-fit
+            // Get generated barcode dimensions for auto-fit functionality
             const genDimensions = await getImageDimensions(generatedBarcode);
             setGeneratedDimensions(genDimensions);
-
-            // Calculate and set optimal scale
-            const optimalScale = calculateOptimalScale(originalDimensions, genDimensions);
-            setSizeScale(optimalScale);
 
             setResult({
                 originalImage: deskewedDataUrl,
@@ -364,9 +360,6 @@ export function ComparePage() {
 
             const genDimensions = await getImageDimensions(generatedBarcode);
             setGeneratedDimensions(genDimensions);
-
-            const optimalScale = calculateOptimalScale(result.originalDimensions, genDimensions);
-            setSizeScale(optimalScale);
 
             setResult({
                 ...result,
