@@ -617,21 +617,21 @@
     font-weight: 600;
 }
 
-/* Original Barcode Color Modification */
+/* Original Barcode Style */
 .original-barcode-img {
-    filter: invert(28%) sepia(97%) saturate(2253%) hue-rotate(212deg) brightness(98%) contrast(104%);
-    /* This filter makes black bars look sharply blue */
-    mix-blend-mode: multiply;
+    filter: none;
+    /* Clean up the original for clear comparison */
+    mix-blend-mode: normal;
 }
 
 /* Overlay Specific Adjustments */
 .overlay-layer.original .original-barcode-img {
-    filter: invert(28%) sepia(97%) saturate(2253%) hue-rotate(212deg) brightness(98%) contrast(104%);
+    filter: none;
 }
 
 .overlay-layer.generated img {
-    /* Generated barcode stays black for contrast */
-    filter: none;
+    /* Generated barcode is now blue via JS generateBarcode */
+    mix-blend-mode: multiply;
 }
 
 /* Range with floating label */

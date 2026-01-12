@@ -10,6 +10,7 @@ export interface BarcodeOptions {
     fontSize?: number;
     displayValue?: boolean;
     margin?: number;
+    lineColor?: string;
 }
 
 export async function generateBarcode(
@@ -22,7 +23,8 @@ export async function generateBarcode(
         height = 100,
         fontSize = 18,
         displayValue = true,
-        margin = 10
+        margin = 10,
+        lineColor = '#000000'
     } = options;
 
     if (type === 'QR') {
@@ -40,7 +42,7 @@ export async function generateBarcode(
             displayValue,
             margin,
             background: '#ffffff',
-            lineColor: '#000000'
+            lineColor: lineColor
         });
 
         return canvas.toDataURL('image/png');

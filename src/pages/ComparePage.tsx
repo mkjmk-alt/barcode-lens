@@ -45,6 +45,100 @@ const getImageDimensions = (dataUrl: string): Promise<ImageDimensions> => {
     });
 };
 
+// Auto deskew logic for barcode images
+const autoDeskew = async (dataUrl: string): Promise<string> => {
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            if (!ctx) {
+                resolve(dataUrl);
+                return;
+            }
+
+            // For simplicity and speed in a browser environment, 
+            // we'll focus on a range of -15 to 15 degrees with 0.5 step
+            // For a production app, a Hough transform would be more robust
+            const maxDimension = Math.max(img.width, img.height);
+            canvas.width = maxDimension;
+            canvas.height = maxDimension;
+
+            const checkAngle = (angle: number): number => {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.save();
+                ctx.translate(canvas.width / 2, canvas.height / 2);
+                ctx.rotate((angle * Math.PI) / 180);
+                ctx.drawImage(img, -img.width / 2, -img.height / 2);
+                ctx.restore();
+
+                // Sample a middle strip to check vertical projection variance
+                const stripWidth = 100;
+                const stripX = Math.floor(canvas.width / 2 - stripWidth / 2);
+                const imageData = ctx.getImageData(stripX, 0, stripWidth, canvas.height);
+                const data = imageData.data;
+
+                // Calculate vertical variance (intensity variation along X axis)
+                // Barcode bars are vertical, so when perfectly aligned, 
+                // the horizontal projection across vertical bars shows high contrast
+                let variance = 0;
+                for (let x = 0; x < stripWidth - 1; x++) {
+                    let intensityDiff = 0;
+                    for (let y = Math.floor(canvas.height * 0.25); y < canvas.height * 0.75; y += 4) {
+                        const idx = (y * stripWidth + x) * 4;
+                        const idxNext = (y * stripWidth + x + 1) * 4;
+                        const gray = (data[idx] + data[idx + 1] + data[idx + 2]) / 3;
+                        const grayNext = (data[idxNext] + data[idxNext + 1] + data[idxNext + 2]) / 3;
+                        intensityDiff += Math.abs(gray - grayNext);
+                    }
+                    variance += intensityDiff;
+                }
+                return variance;
+            };
+
+            let bestAngle = 0;
+            let maxVariance = -1;
+
+            // Coarse search
+            for (let a = -15; a <= 15; a += 1) {
+                const v = checkAngle(a);
+                if (v > maxVariance) {
+                    maxVariance = v;
+                    bestAngle = a;
+                }
+            }
+
+            // Fine search around best coarse angle
+            const coarseBest = bestAngle;
+            for (let a = coarseBest - 1; a <= coarseBest + 1; a += 0.2) {
+                const v = checkAngle(a);
+                if (v > maxVariance) {
+                    maxVariance = v;
+                    bestAngle = a;
+                }
+            }
+
+            // Final output
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Calculate new dimensions to avoid cropping
+            const radians = (bestAngle * Math.PI) / 180;
+            const newWidth = Math.abs(img.width * Math.cos(radians)) + Math.abs(img.height * Math.sin(radians));
+            const newHeight = Math.abs(img.width * Math.sin(radians)) + Math.abs(img.height * Math.cos(radians));
+
+            canvas.width = newWidth;
+            canvas.height = newHeight;
+
+            ctx.translate(canvas.width / 2, canvas.height / 2);
+            ctx.rotate(radians);
+            ctx.drawImage(img, -img.width / 2, -img.height / 2);
+
+            resolve(canvas.toDataURL('image/png'));
+        };
+        img.src = dataUrl;
+    });
+};
+
 export function ComparePage() {
     const [status, setStatus] = useState<ProcessingStatus>('idle');
     const [statusMessage, setStatusMessage] = useState('');
@@ -121,17 +215,22 @@ export function ComparePage() {
 
     const processImage = async (imageDataUrl: string) => {
         setStatus('recognizing');
-        setStatusMessage('바코드 텍스트 인식 중...');
+        setStatusMessage('이미지 수평 보정 중...');
         setProgress(0);
         setError('');
 
         try {
-            // Get original image dimensions
-            const originalDimensions = await getImageDimensions(imageDataUrl);
+            // Auto deskew before OCR
+            const deskewedDataUrl = await autoDeskew(imageDataUrl);
+
+            setStatusMessage('바코드 텍스트 인식 중...');
+
+            // Get original image dimensions from the deskewed version
+            const originalDimensions = await getImageDimensions(deskewedDataUrl);
 
             // Perform OCR
             const ocrResult = await Tesseract.recognize(
-                imageDataUrl,
+                deskewedDataUrl,
                 'eng+kor',
                 {
                     logger: (m) => {
@@ -161,7 +260,8 @@ export function ComparePage() {
             const generatedBarcode = await generateBarcode(recognizedText, detectedType, {
                 fontSize: 16,
                 height: 80,
-                margin: 10
+                margin: 10,
+                lineColor: '#2563eb' // Blue color for generated barcode lines
             });
 
             if (!generatedBarcode) {
@@ -177,7 +277,7 @@ export function ComparePage() {
             setSizeScale(optimalScale);
 
             setResult({
-                originalImage: imageDataUrl,
+                originalImage: deskewedDataUrl,
                 originalDimensions,
                 recognizedText,
                 generatedBarcode,
@@ -254,7 +354,8 @@ export function ComparePage() {
             const generatedBarcode = await generateBarcode(manualText.trim(), barcodeType, {
                 fontSize: 16,
                 height: 80,
-                margin: 10
+                margin: 10,
+                lineColor: '#2563eb' // Blue color for generated barcode lines
             });
 
             if (!generatedBarcode) {
