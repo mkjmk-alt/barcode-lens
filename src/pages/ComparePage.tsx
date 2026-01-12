@@ -45,104 +45,7 @@ const getImageDimensions = (dataUrl: string): Promise<ImageDimensions> => {
     });
 };
 
-// Auto deskew logic for barcode images
-const autoDeskew = async (dataUrl: string): Promise<string> => {
-    return new Promise((resolve) => {
-        const img = new Image();
-        img.onload = () => {
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            if (!ctx) {
-                resolve(dataUrl);
-                return;
-            }
 
-            // For simplicity and speed in a browser environment, 
-            // we'll focus on a range of -15 to 15 degrees with 0.5 step
-            // For a production app, a Hough transform would be more robust
-            const maxDimension = Math.max(img.width, img.height);
-            canvas.width = maxDimension;
-            canvas.height = maxDimension;
-
-            const checkAngle = (angle: number): number => {
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                ctx.save();
-                ctx.translate(canvas.width / 2, canvas.height / 2);
-                ctx.rotate((angle * Math.PI) / 180);
-                ctx.drawImage(img, -img.width / 2, -img.height / 2);
-                ctx.restore();
-
-                // Sample a middle strip to check vertical projection variance
-                const stripWidth = 100;
-                const stripX = Math.floor(canvas.width / 2 - stripWidth / 2);
-                const imageData = ctx.getImageData(stripX, 0, stripWidth, canvas.height);
-                const data = imageData.data;
-
-                // Calculate vertical variance (intensity variation along X axis)
-                // Barcode bars are vertical, so when perfectly aligned, 
-                // the horizontal projection across vertical bars shows high contrast
-                let variance = 0;
-                for (let x = 0; x < stripWidth - 1; x++) {
-                    let intensityDiff = 0;
-                    for (let y = Math.floor(canvas.height * 0.25); y < canvas.height * 0.75; y += 4) {
-                        const idx = (y * stripWidth + x) * 4;
-                        const idxNext = (y * stripWidth + x + 1) * 4;
-                        const gray = (data[idx] + data[idx + 1] + data[idx + 2]) / 3;
-                        const grayNext = (data[idxNext] + data[idxNext + 1] + data[idxNext + 2]) / 3;
-                        intensityDiff += Math.abs(gray - grayNext);
-                    }
-                    variance += intensityDiff;
-                }
-                return variance;
-            };
-
-            let bestAngle = 0;
-            let maxVariance = -1;
-
-            // Coarse search
-            for (let a = -15; a <= 15; a += 1) {
-                const v = checkAngle(a);
-                if (v > maxVariance) {
-                    maxVariance = v;
-                    bestAngle = a;
-                }
-            }
-
-            // Fine search around best coarse angle
-            const coarseBest = bestAngle;
-            for (let a = coarseBest - 1; a <= coarseBest + 1; a += 0.2) {
-                const v = checkAngle(a);
-                if (v > maxVariance) {
-                    maxVariance = v;
-                    bestAngle = a;
-                }
-            }
-
-            // Final output with white background
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            // Calculate new dimensions to avoid cropping
-            const radians = (bestAngle * Math.PI) / 180;
-            const newWidth = Math.abs(img.width * Math.cos(radians)) + Math.abs(img.height * Math.sin(radians));
-            const newHeight = Math.abs(img.width * Math.sin(radians)) + Math.abs(img.height * Math.cos(radians));
-
-            canvas.width = newWidth;
-            canvas.height = newHeight;
-
-            // Refill white after resizing
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            ctx.translate(canvas.width / 2, canvas.height / 2);
-            ctx.rotate(radians);
-            ctx.drawImage(img, -img.width / 2, -img.height / 2);
-
-            resolve(canvas.toDataURL('image/png'));
-        };
-        img.src = dataUrl;
-    });
-};
 
 export function ComparePage() {
     const [status, setStatus] = useState<ProcessingStatus>('idle');
@@ -152,7 +55,6 @@ export function ComparePage() {
     const [barcodeType, setBarcodeType] = useState<BarcodeType>('CODE128');
     const [manualText, setManualText] = useState('');
     const [progress, setProgress] = useState(0);
-    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
     // Compare mode and size adjustment states
     const [compareMode, setCompareMode] = useState<CompareMode>('side-by-side');
@@ -221,23 +123,17 @@ export function ComparePage() {
 
     const processImage = async (imageDataUrl: string) => {
         setStatus('recognizing');
-        setStatusMessage('이미지 수평 보정 중...');
+        setStatusMessage('바코드 텍스트 인식 중...');
         setProgress(0);
         setError('');
 
         try {
-            // Auto deskew before OCR
-            const deskewedDataUrl = await autoDeskew(imageDataUrl);
-            setPreviewUrl(deskewedDataUrl);
-
-            setStatusMessage('바코드 텍스트 인식 중...');
-
-            // Get original image dimensions from the deskewed version
-            const originalDimensions = await getImageDimensions(deskewedDataUrl);
+            // Get original image dimensions
+            const originalDimensions = await getImageDimensions(imageDataUrl);
 
             // Perform OCR
             const ocrResult = await Tesseract.recognize(
-                deskewedDataUrl,
+                imageDataUrl,
                 'eng+kor',
                 {
                     logger: (m) => {
@@ -280,7 +176,7 @@ export function ComparePage() {
             setGeneratedDimensions(genDimensions);
 
             setResult({
-                originalImage: deskewedDataUrl,
+                originalImage: imageDataUrl,
                 originalDimensions,
                 recognizedText,
                 generatedBarcode,
@@ -388,7 +284,6 @@ export function ComparePage() {
         setError('');
         setManualText('');
         setProgress(0);
-        setPreviewUrl(null);
         setSizeScale(100);
         setGeneratedDimensions(null);
         setOffsetX(0);
@@ -461,15 +356,6 @@ export function ComparePage() {
                                     className="progress-fill"
                                     style={{ width: `${progress}%` }}
                                 ></div>
-                            </div>
-                        )}
-
-                        {previewUrl && (
-                            <div className="processing-preview">
-                                <p className="preview-label">✔️ 수평 보정 완료</p>
-                                <div className="preview-image-wrapper">
-                                    <img src={previewUrl} alt="Deskewed preview" />
-                                </div>
                             </div>
                         )}
                     </div>
