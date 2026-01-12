@@ -61,6 +61,7 @@ export function ComparePage() {
     const [overlayOpacity, setOverlayOpacity] = useState(50);
     const [sizeScale, setSizeScale] = useState(100); // Percentage scale for generated barcode
     const [generatedDimensions, setGeneratedDimensions] = useState<ImageDimensions | null>(null);
+    const [recommendedType, setRecommendedType] = useState<BarcodeType | null>(null);
 
     // Position offset for overlay comparison
     const [offsetX, setOffsetX] = useState(0);
@@ -156,6 +157,7 @@ export function ComparePage() {
 
             const detectedType = detectBarcodeType(recognizedText);
             setBarcodeType(detectedType);
+            setRecommendedType(detectedType);
 
             setStatus('generating');
             setStatusMessage('바코드 생성 중...');
@@ -396,17 +398,28 @@ export function ComparePage() {
                                     {result.confidence.toFixed(1)}%
                                 </span>
                             </div>
-                            <div className="info-item">
+                            <div className="info-item barcode-type-item">
                                 <span className="info-label">바코드 타입:</span>
-                                <select
-                                    className="select"
-                                    value={barcodeType}
-                                    onChange={(e) => setBarcodeType(e.target.value as BarcodeType)}
-                                >
-                                    {BARCODE_TYPES.map(type => (
-                                        <option key={type.value} value={type.value}>{type.label}</option>
-                                    ))}
-                                </select>
+                                <div className="select-with-recommendation">
+                                    <select
+                                        className="select"
+                                        value={barcodeType}
+                                        onChange={(e) => setBarcodeType(e.target.value as BarcodeType)}
+                                    >
+                                        {BARCODE_TYPES.map(type => (
+                                            <option key={type.value} value={type.value}>{type.label}</option>
+                                        ))}
+                                    </select>
+                                    {recommendedType && (
+                                        <div className="recommendation-badge" title="인식된 데이터의 길이와 구성을 바탕으로 산출된 최적의 형식입니다.">
+                                            ✨ 추천 형식: <strong>{BARCODE_TYPES.find(t => t.value === recommendedType)?.label}</strong>
+                                            <span className="recommendation-reason">
+                                                ({recommendedType === 'EAN13' || recommendedType === 'EAN8' ? '숫자 길이 일치' :
+                                                    recommendedType === 'CODE128C' ? '짝수자리 숫자' : '표준 문자열'})
+                                            </span>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                             <button className="btn btn-outline" onClick={handleManualRegenerate}>
                                 🔄 재생성
@@ -563,7 +576,8 @@ export function ComparePage() {
                         </button>
                     </div>
                 </>
-            )}
+            )
+            }
 
             <div className="tips-section">
                 <details>
@@ -576,8 +590,41 @@ export function ComparePage() {
                         <li>슬라이더로 생성된 바코드 크기를 수동 미세 조절 가능</li>
                     </ul>
                 </details>
+
+                <details className="guide-details">
+                    <summary>🩹 훼손된 바코드 원본 추정 가이드</summary>
+                    <div className="guide-content">
+                        <h4>훼손된 바코드를 복구하거나 추정하는 방법:</h4>
+                        <ol>
+                            <li>
+                                <strong>HRI(텍스트) 확인</strong>: 바코드 아래에 인쇄된 숫자나 문자를 확인하십시오. OCR이 일부 누락했더라도 눈으로 식별 가능한 부분을 직접 입력하여 재생성할 수 있습니다.
+                            </li>
+                            <li>
+                                <strong>체크섬(Check Digit) 계산</strong>: EAN-13, EAN-8 등은 마지막 자리가 체크섬입니다. 한 자리가 누락된 경우 다른 숫자들을 조합하여 유효한 체크섬을 역산할 수 있습니다.
+                            </li>
+                            <li>
+                                <strong>가드 바(Guard Bar) 패턴 분석</strong>: 바코드 양쪽 끝과 중앙의 긴 막대(가드 바) 패턴을 통해 EAN 형식을 구분할 수 있습니다.
+                            </li>
+                            <li>
+                                <strong>일부분 스캔</strong>: 바코드가 세로로 찢어진 경우, 손상되지 않은 위쪽이나 아래쪽 일부분만 스캔하여 데이터를 얻을 수 있습니다.
+                            </li>
+                            <li>
+                                <strong>유사 제품 대조</strong>: 비슷한 제조사의 다른 제품 바코드를 확인하여 앞부분(제조사 코드)을 추정할 수 있습니다.
+                            </li>
+                            <li>
+                                <strong>이미지 명암 조절</strong>: 원본 이미지가 너무 어둡거나 밝아 인식이 안 되는 경우, 휴대폰의 편집 기능을 이용해 대비(Contrast)를 높이면 숨겨진 막대 패턴이 드러날 수 있습니다.
+                            </li>
+                            <li>
+                                <strong>확대 및 각도 조절</strong>: 이미지를 확대하여 촬영하거나, 바코드 결을 따라 비스듬히 촬영하면 긁힌 자국을 피해 데이터를 인식할 수 있는 경우가 있습니다.
+                            </li>
+                        </ol>
+                        <p className="text-secondary" style={{ fontSize: '0.8rem', marginTop: '1rem' }}>
+                            * 본 도구는 인식된 데이터를 바탕으로 표준 규격의 바코드를 생성하여 원본과 비교를 도와줌으로써 명확한 복구를 지원합니다.
+                        </p>
+                    </div>
+                </details>
             </div>
-        </div>
+        </div >
     );
 }
 
