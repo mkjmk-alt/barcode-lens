@@ -1,122 +1,159 @@
 .generate-page {
-    padding-top: 1.5rem;
-    padding-bottom: 2rem;
-}
-
-.page-header {
-    margin-bottom: 1.5rem;
-}
-
-.page-header h2 {
-    font-size: 1.5rem;
-    margin-bottom: 0.25rem;
-}
-
-.section {
-    margin-bottom: 1rem;
+    padding-top: 24px;
+    padding-bottom: 100px;
+    /* Space for FAB or extra content */
 }
 
 .section-title {
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: var(--text-secondary);
-    margin-bottom: 1rem;
+    font-size: 24px;
+    margin-bottom: 16px;
+    font-weight: 800;
+}
+
+.generate-section {
+    margin-bottom: 40px;
+}
+
+.type-selector {
     display: flex;
-    align-items: center;
-    gap: 0.5rem;
+    gap: 8px;
+    margin-bottom: 20px;
+    overflow-x: auto;
+    padding-bottom: 4px;
 }
 
-.form-group {
-    margin-bottom: 1rem;
-}
-
-.form-group:last-child {
-    margin-bottom: 0;
-}
-
-.checkbox-label {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
+.type-chip {
+    padding: 8px 16px;
+    border: 1px solid var(--border-light);
+    background: var(--bg-secondary);
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
     cursor: pointer;
-    font-size: 0.875rem;
+    white-space: nowrap;
+    transition: all 0.2s;
 }
 
-.checkbox-label input[type="checkbox"] {
-    width: 18px;
-    height: 18px;
-    accent-color: var(--accent-purple);
+.type-chip.active {
+    background: var(--accent-black);
+    color: var(--accent-white);
+    border-color: var(--accent-black);
 }
 
-.slider-container {
-    margin-bottom: 1rem;
+.create-btn {
+    margin-top: 8px;
 }
 
-.action-buttons {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-    margin-bottom: 1.5rem;
+.error-text {
+    color: #ff0000;
+    font-size: 12px;
+    font-weight: 700;
+    margin-top: 12px;
+    text-align: center;
 }
 
-.action-buttons .btn {
-    width: 100%;
+/* Result Section */
+.result-section {
+    margin-bottom: 48px;
 }
 
-.preview-section {
-    margin-bottom: 1.5rem;
+.result-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-sm);
+    padding: 40px 20px;
+    text-align: center;
 }
 
-.barcode-preview {
-    display: flex;
-    justify-content: center;
-    padding: 1rem;
+.barcode-display {
+    background: white;
+    padding: 24px;
+    margin-bottom: 24px;
+    border-radius: 4px;
+    display: inline-block;
 }
 
-.barcode-preview img {
+.barcode-display img {
     max-width: 100%;
     height: auto;
-    background: white;
-    border-radius: var(--radius-md);
-    padding: 1rem;
 }
 
-.tips-section {
-    margin-top: 1rem;
+.result-info {
+    margin-bottom: 32px;
 }
 
-.tips-section details {
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-md);
-    overflow: hidden;
+.result-value {
+    font-size: 20px;
+    font-weight: 900;
+    margin-bottom: 4px;
+    word-break: break-all;
 }
 
-.tips-section summary {
-    padding: 1rem;
+.result-type {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+}
+
+.result-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.result-actions .btn:last-child {
+    grid-column: span 2;
+}
+
+.action-btn {
+    padding: 12px;
+    font-size: 12px;
+}
+
+/* History Section */
+.history-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.clear-btn {
+    background: none;
+    border: none;
+    font-size: 12px;
+    font-weight: 700;
+    text-decoration: underline;
     cursor: pointer;
-    font-weight: 500;
 }
 
-.tips-section summary:hover {
-    background: var(--glass-bg);
+.history-list {
+    display: flex;
+    flex-direction: column;
 }
 
-.tips-section ul {
-    padding: 0 1rem 1rem 2rem;
-    font-size: 0.875rem;
-    color: var(--text-secondary);
+.empty-history {
+    text-align: center;
+    padding: 48px 0;
+    color: var(--text-muted);
 }
 
-.tips-section li {
-    margin-bottom: 0.5rem;
+.empty-history .material-symbols-outlined {
+    font-size: 48px;
+    margin-bottom: 8px;
+    opacity: 0.2;
 }
 
-.alert ul {
-    margin: 0.5rem 0 0 1rem;
-    font-size: 0.75rem;
+.empty-history p {
+    font-size: 14px;
+    font-weight: 600;
 }
 
-.alert li {
-    margin-bottom: 0.25rem;
+/* Material Symbols Adjustments */
+.material-symbols-outlined {
+    font-variation-settings:
+        'FILL' 0,
+        'wght' 600,
+        'GRAD' 0,
+        'opsz' 24;
 }

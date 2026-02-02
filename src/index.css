@@ -1,39 +1,33 @@
-/* Neo-Brutalist Design System */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
+
 :root {
-    /* Colors */
+    /* Clean Minimalist Palette */
     --bg-primary: #ffffff;
-    --bg-secondary: #f5f5f5;
-    --bg-yellow: #FFD93D;
-    --bg-yellow-light: #FFF3B0;
-
-    /* Accent colors */
-    --accent-blue: #00A3FF;
-    --accent-pink: #FF69B4;
-    --accent-green: #00C853;
-    --accent-cyan: #00BCD4;
-
-    /* Text colors */
+    --bg-secondary: #f8f8f8;
     --text-primary: #000000;
-    --text-secondary: #333333;
-    --text-muted: #666666;
+    --text-secondary: #666666;
+    --text-muted: #999999;
 
-    /* Border */
+    --accent-black: #000000;
+    --accent-white: #ffffff;
+
     --border-color: #000000;
-    --border-width: 3px;
+    --border-light: #eeeeee;
 
-    /* Shadow offset */
-    --shadow-offset: 4px;
+    --radius-xs: 4px;
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
 
-    /* Sizing */
-    --radius-sm: 0px;
-    --radius-md: 4px;
-    --radius-lg: 8px;
+    --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
 }
 
 body {
@@ -41,13 +35,21 @@ body {
     background: var(--bg-primary);
     color: var(--text-primary);
     min-height: 100vh;
-    line-height: 1.4;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
 }
 
 #root {
     min-height: 100vh;
     display: flex;
     flex-direction: column;
+}
+
+.container {
+    width: 100%;
+    max-width: 440px;
+    margin: 0 auto;
+    padding: 0 20px;
 }
 
 /* Typography */
@@ -57,83 +59,183 @@ h3,
 h4,
 h5,
 h6 {
-    font-weight: 900;
-    line-height: 1.2;
+    font-weight: 800;
+    letter-spacing: -0.01em;
     text-transform: uppercase;
-    letter-spacing: -0.02em;
+    color: var(--accent-black);
 }
 
-/* Base UI Components (Legacy Compatibility) */
+.text-muted {
+    color: var(--text-muted);
+}
+
+.text-secondary {
+    color: var(--text-secondary);
+}
+
+.text-center {
+    text-align: center;
+}
+
+/* Buttons */
 .btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 0.5rem;
-    padding: 0.875rem 1.5rem;
-    background: var(--bg-primary);
-    border: var(--border-width) solid var(--border-color);
-    box-shadow: var(--shadow-offset) var(--shadow-offset) 0 var(--border-color);
-    font-size: 1rem;
-    font-weight: 800;
-    cursor: pointer;
-    transition: all 0.1s ease;
-    color: var(--text-primary);
-    text-decoration: none;
-}
-
-.btn:active {
-    transform: translate(2px, 2px);
-    box-shadow: 2px 2px 0 var(--border-color);
-}
-
-.btn-primary {
-    background: var(--bg-yellow);
-}
-
-.btn-secondary {
-    background: var(--bg-primary);
-}
-
-.input,
-.select {
-    width: 100%;
-    padding: 0.875rem 1rem;
-    background: var(--bg-primary);
-    border: var(--border-width) solid var(--border-color);
-    font-size: 1rem;
+    gap: 8px;
+    padding: 14px 24px;
+    border-radius: var(--radius-xs);
+    font-size: 14px;
     font-weight: 700;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1.5px solid var(--accent-black);
+    width: 100%;
 }
 
-.input:focus {
-    outline: none;
-    box-shadow: var(--shadow-offset) var(--shadow-offset) 0 var(--border-color);
+.btn-black {
+    background: var(--accent-black);
+    color: var(--accent-white);
 }
 
-.label {
+.btn-black:active {
+    background: #333;
+    transform: scale(0.98);
+}
+
+.btn-white {
+    background: var(--accent-white);
+    color: var(--accent-black);
+}
+
+.btn-white:active {
+    background: #f0f0f0;
+    transform: scale(0.98);
+}
+
+/* Inputs */
+.input-group {
+    margin-bottom: 24px;
+}
+
+.input-label {
     display: block;
-    margin-bottom: 0.5rem;
-    font-size: 0.875rem;
-    font-weight: 800;
+    font-size: 12px;
+    font-weight: 900;
+    color: var(--accent-black);
+    margin-bottom: 12px;
     text-transform: uppercase;
 }
 
-.container {
+.input-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.input-main {
     width: 100%;
-    max-width: 480px;
-    margin: 0 auto;
-    padding: 0 1rem;
+    padding: 16px;
+    padding-right: 48px;
+    border: 1.5px solid var(--accent-black);
+    font-size: 16px;
+    font-weight: 600;
+    border-radius: var(--radius-xs);
+    outline: none;
 }
 
-/* Custom Scrollbar */
-::-webkit-scrollbar {
-    width: 10px;
+.input-main::placeholder {
+    color: #ccc;
+    text-transform: uppercase;
 }
 
-::-webkit-scrollbar-track {
+.input-icon {
+    position: absolute;
+    right: 16px;
+    color: var(--text-muted);
+}
+
+/* Cards */
+.card {
     background: var(--bg-secondary);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-sm);
+    padding: 24px;
+    margin-bottom: 24px;
 }
 
-::-webkit-scrollbar-thumb {
-    background: var(--bg-yellow);
-    border: 2px solid var(--border-color);
+/* List Items */
+.list-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.list-item-icon {
+    width: 48px;
+    height: 48px;
+    background: #fcfcfc;
+    border: 1px solid #f0f0f0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+}
+
+.list-item-content {
+    flex: 1;
+}
+
+.list-item-title {
+    font-size: 15px;
+    font-weight: 700;
+}
+
+.list-item-subtitle {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-top: 4px;
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-fade-in {
+    animation: fadeIn 0.4s ease-out forwards;
+}
+
+/* Floating Action Button */
+.fab {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    width: 56px;
+    height: 56px;
+    background: var(--accent-black);
+    color: var(--accent-white);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    cursor: pointer;
+    z-index: 100;
+}
+
+.fab:active {
+    transform: scale(0.9);
 }
