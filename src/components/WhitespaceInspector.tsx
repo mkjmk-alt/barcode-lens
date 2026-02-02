@@ -14,29 +14,29 @@ export const WhitespaceInspector: React.FC<Props> = ({ text }) => {
 
     return (
         <div className="whitespace-inspector">
-            <div className="inspector-display">
+            <div className="inspector-display-text">
                 {analysis.map((item, idx) => (
-                    <span
-                        key={idx}
-                        className={`char-box ${item.isInvisible ? 'invisible-char' : ''}`}
-                        title={`CHAR(${item.code}): ${item.name}`}
-                    >
-                        {item.isInvisible ? ' ' : item.char}
-                        {item.isInvisible && <span className="char-indicator">{item.name}</span>}
-                    </span>
+                    item.isInvisible ? (
+                        <span
+                            key={idx}
+                            className="invisible-char-highlight"
+                            title={`CHAR(${item.code}): ${item.name}`}
+                        >
+                            {item.char === '\n' ? '↵' : (item.char === '\t' ? '→' : ' ')}
+                            <span className="char-label">{item.name}</span>
+                        </span>
+                    ) : (
+                        <span key={idx} className="normal-char">{item.char}</span>
+                    )
                 ))}
             </div>
 
             {hasInvisible && (
                 <div className="inspector-legend mt-2">
-                    <p className="text-muted">
-                        <span className="dot help"></span>
-                        빨간색 표시는 보이지 않는 특수 문자(공백 등)를 의미합니다.
-                    </p>
                     <div className="char-codes-list">
-                        {analysis.filter(c => c.isInvisible).map((c, idx) => (
+                        {Array.from(new Set(analysis.filter(c => c.isInvisible).map(c => `${c.name}: CHAR(${c.code})`))).map((label, idx) => (
                             <span key={idx} className="char-badge">
-                                {c.name}: CHAR({c.code})
+                                {label}
                             </span>
                         ))}
                     </div>

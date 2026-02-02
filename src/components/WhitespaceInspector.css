@@ -1,75 +1,68 @@
 .whitespace-inspector {
-    background: var(--bg-secondary);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-md);
-    padding: 16px;
-    margin-top: 12px;
+    padding: 8px 0;
+    width: 100%;
 }
 
-.inspector-display {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
-    font-family: 'Roboto Mono', monospace;
+.inspector-display-text {
+    font-family: 'Inter', 'Roboto Mono', monospace;
     font-size: 16px;
-    line-height: 1.5;
+    font-weight: 600;
+    line-height: 1.8;
+    color: var(--text-primary);
+    word-break: break-all;
+    white-space: pre-wrap;
+    display: block;
 }
 
-.char-box {
-    position: relative;
-    padding: 2px 4px;
-    border-radius: 4px;
-    min-width: 1em;
-    display: inline-flex;
-    justify-content: center;
-    background: #f0f0f0;
+.normal-char {
+    display: inline;
 }
 
-.invisible-char {
-    background: #ff4d4d !important;
+.invisible-char-highlight {
+    display: inline-block;
+    background: #ff4d4d;
     /* Fluorescent Red */
     color: white;
-    box-shadow: 0 0 10px rgba(255, 77, 77, 0.4);
-    min-width: 2.5em;
-    /* Space for indicator */
+    padding: 0 4px;
+    margin: 0 1px;
+    border-radius: 2px;
+    position: relative;
+    vertical-align: baseline;
+    min-width: 12px;
+    text-align: center;
+    box-shadow: 0 0 8px rgba(255, 77, 77, 0.5);
 }
 
-.char-indicator {
+.char-label {
     position: absolute;
-    top: -12px;
+    bottom: -14px;
     left: 50%;
     transform: translateX(-50%);
-    font-size: 8px;
+    font-size: 9px;
     font-weight: 800;
     color: #ff4d4d;
-    background: white;
-    padding: 0 2px;
-    border-radius: 2px;
     white-space: nowrap;
-    z-index: 10;
+    line-height: 1;
+}
+
+.inspector-legend {
+    margin-top: 16px;
+    border-top: 1px dashed var(--border);
+    padding-top: 12px;
 }
 
 .char-codes-list {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
-    margin-top: 8px;
+    gap: 6px;
 }
 
 .char-badge {
-    background: var(--accent);
-    color: white;
-    padding: 4px 8px;
-    border-radius: var(--radius-sm);
+    background: #000;
+    color: #fff;
+    padding: 2px 8px;
+    border-radius: 4px;
     font-size: 11px;
     font-weight: 700;
-}
-
-.dot.help {
-    display: inline-block;
-    width: 8px;
-    height: 8px;
-    background: #ff4d4d;
-    border-radius: 50%;
-    margin-right: 6px;
+    letter-spacing: 0.5px;
 }
