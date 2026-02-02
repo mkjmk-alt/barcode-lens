@@ -8,6 +8,7 @@ import type { BarcodeType } from '../utils/barcodeGenerator';
 import { getScanHistory, addScanToHistory } from '../utils/helpers';
 import type { ScanHistoryItem } from '../utils/helpers';
 import { useTranslation } from '../utils/LanguageContext';
+import { WhitespaceInspector } from '../components/WhitespaceInspector';
 import './GeneratePage.css';
 
 const BARCODE_TYPES: { value: BarcodeType; label: string }[] = [
@@ -114,6 +115,7 @@ export function GeneratePage() {
                     <div className="preview-meta">
                         <span className="type-badge">{barcodeType}</span>
                         <h3 className="preview-val">{inputText}</h3>
+                        <WhitespaceInspector text={inputText} />
                     </div>
                     <div className="preview-actions">
                         <button className="btn btn-secondary" onClick={copyToClipboard}>
@@ -143,6 +145,7 @@ export function GeneratePage() {
                                 </span>
                                 <div>
                                     <p className="item-val">{item.value}</p>
+                                    <WhitespaceInspector text={item.value} />
                                     <p className="item-meta">{item.type}</p>
                                 </div>
                             </div>

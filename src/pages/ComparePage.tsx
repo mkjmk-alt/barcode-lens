@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import Tesseract from 'tesseract.js';
 import { generateBarcode } from '../utils/barcodeGenerator';
 import type { BarcodeType } from '../utils/barcodeGenerator';
+import { WhitespaceInspector } from '../components/WhitespaceInspector';
 import { useTranslation } from '../utils/LanguageContext';
 import './ComparePage.css';
 
@@ -232,6 +233,7 @@ export function ComparePage() {
                                 <span className={`confidence-badge ${result.confidence > 80 ? 'high' : result.confidence > 50 ? 'medium' : 'low'}`}>
                                     {result.confidence.toFixed(1)}% {t.compare.confidence}
                                 </span>
+                                <WhitespaceInspector text={manualText} />
                             </div>
                             <div className="info-item">
                                 <span className="info-label">{t.compare.labelFormat}</span>

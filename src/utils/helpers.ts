@@ -1,29 +1,42 @@
 // Utility functions for text processing
 
-export function highlightWhitespace(text: string): string {
-    let result = '';
-    for (const c of text) {
-        if (c === ' ') {
-            result += '<mark class="highlight-space">␣</mark>';
-        } else if (c === '\t') {
-            result += '<mark class="highlight-space">→(Tab)</mark>';
-        } else if (c === '\n') {
-            result += '<mark class="highlight-space">↵(NewLine)</mark><br>';
-        } else if (c === '\r') {
-            continue;
-        } else {
-            result += c;
+export interface CharInfo {
+    char: string;
+    code: number;
+    name: string;
+    isInvisible: boolean;
+}
+
+/**
+ * Detects special/invisible characters and returns detailed information.
+ */
+export function analyzeString(text: string): CharInfo[] {
+    const chars: CharInfo[] = [];
+    for (let i = 0; i < text.length; i++) {
+        const char = text[i];
+        const code = char.charCodeAt(0);
+        let name = char;
+        let isInvisible = false;
+
+        if (code <= 32 || (code >= 127 && code <= 160) || code === 8203) {
+            isInvisible = true;
+            switch (code) {
+                case 0: name = 'NULL'; break;
+                case 9: name = 'TAB'; break;
+                case 10: name = 'LF'; break;
+                case 13: name = 'CR'; break;
+                case 29: name = 'GS'; break;
+                case 30: name = 'RS'; break;
+                case 31: name = 'US'; break;
+                case 32: name = 'SPACE'; break;
+                case 160: name = 'NBSP'; break;
+                case 8203: name = 'ZWSP'; break;
+                default: name = `CHAR(${code})`;
+            }
         }
+        chars.push({ char, code, name, isInvisible });
     }
-    return result;
-}
-
-export function hasWhitespaceOrSpecial(s: string): boolean {
-    return [' ', '\n', '\r', '\t', '\x0D'].some(c => s.includes(c));
-}
-
-export function removeWhitespaceSpecial(s: string): string {
-    return s.split('').filter(c => ![' ', '\n', '\r', '\t', '\x0D'].includes(c)).join('');
+    return chars;
 }
 
 export function formatDate(date: Date): string {
@@ -39,7 +52,7 @@ export interface ScanHistoryItem {
 }
 
 const HISTORY_KEY = 'barcode_scan_history';
-const MAX_HISTORY_ITEMS = 20;
+const MAX_HISTORY_ITEMS = 30;
 
 export function getScanHistory(): ScanHistoryItem[] {
     try {
@@ -64,7 +77,6 @@ export function addScanToHistory(value: string, type: string): void {
 
     // Add new item at the beginning
     const updated = [newItem, ...filtered].slice(0, MAX_HISTORY_ITEMS);
-
     localStorage.setItem(HISTORY_KEY, JSON.stringify(updated));
 }
 

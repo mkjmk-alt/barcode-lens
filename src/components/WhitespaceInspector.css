@@ -1,0 +1,75 @@
+.whitespace-inspector {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    margin-top: 12px;
+}
+
+.inspector-display {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    font-family: 'Roboto Mono', monospace;
+    font-size: 16px;
+    line-height: 1.5;
+}
+
+.char-box {
+    position: relative;
+    padding: 2px 4px;
+    border-radius: 4px;
+    min-width: 1em;
+    display: inline-flex;
+    justify-content: center;
+    background: #f0f0f0;
+}
+
+.invisible-char {
+    background: #ff4d4d !important;
+    /* Fluorescent Red */
+    color: white;
+    box-shadow: 0 0 10px rgba(255, 77, 77, 0.4);
+    min-width: 2.5em;
+    /* Space for indicator */
+}
+
+.char-indicator {
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 8px;
+    font-weight: 800;
+    color: #ff4d4d;
+    background: white;
+    padding: 0 2px;
+    border-radius: 2px;
+    white-space: nowrap;
+    z-index: 10;
+}
+
+.char-codes-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.char-badge {
+    background: var(--accent);
+    color: white;
+    padding: 4px 8px;
+    border-radius: var(--radius-sm);
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.dot.help {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    background: #ff4d4d;
+    border-radius: 50%;
+    margin-right: 6px;
+}
