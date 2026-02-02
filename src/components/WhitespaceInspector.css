@@ -1,26 +1,26 @@
 .whitespace-inspector {
-    padding: 2px 0;
     width: 100%;
+    margin: 4px 0;
+    text-align: left;
+    /* Ensure left alignment for sentence flow */
 }
 
 .inspector-display-text {
-    font-family: 'Inter', 'Roboto Mono', monospace;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
     font-size: 16px;
     font-weight: 600;
-    line-height: normal;
-    /* Tightened */
+    line-height: 2;
+    /* Increased for labels */
     color: var(--text-primary);
     word-break: break-all;
     white-space: pre-wrap;
-    display: flex;
-    /* Changed from block to flex for better control */
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0;
+    display: block;
+    /* Changed back to block for natural word wrapping */
 }
 
 .normal-char {
-    display: inline-block;
+    display: inline;
+    letter-spacing: -0.01em;
 }
 
 .invisible-char-highlight {
@@ -29,12 +29,14 @@
     /* Fluorescent Red */
     color: white;
     padding: 0 4px;
-    margin: 0 1px;
-    border-radius: 2px;
+    margin: 0 2px;
+    border-radius: 3px;
     position: relative;
-    min-width: 8px;
+    vertical-align: baseline;
+    min-width: 14px;
     text-align: center;
-    box-shadow: 0 0 8px rgba(255, 77, 77, 0.5);
+    box-shadow: 0 0 12px rgba(255, 77, 77, 0.4);
+    font-family: 'Roboto Mono', monospace;
     font-size: 14px;
 }
 
@@ -43,12 +45,16 @@
     bottom: -15px;
     left: 50%;
     transform: translateX(-50%);
-    font-size: 9px;
-    font-weight: 800;
+    font-size: 8px;
+    font-weight: 900;
     color: #ff4d4d;
+    background: white;
+    padding: 0 2px;
+    border-radius: 2px;
     white-space: nowrap;
     line-height: 1;
     pointer-events: none;
+    border: 1px solid rgba(255, 77, 77, 0.2);
 }
 
 .inspector-legend {
