@@ -1,11 +1,14 @@
+import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from '../utils/LanguageContext';
+import { Sidebar } from './Sidebar';
 import './Header.css';
 
 export function Header() {
     const navigate = useNavigate();
     const location = useLocation();
     const { t, language, setLanguage } = useTranslation();
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
     const getTitle = () => {
         switch (location.pathname) {
@@ -20,9 +23,14 @@ export function Header() {
     return (
         <header className="app-header">
             <div className="header-inner container">
-                <div className="header-logo" onClick={() => navigate('/')}>
-                    <span className="logo-dot"></span>
-                    <h1>{getTitle()}</h1>
+                <div className="header-left">
+                    <button className="menu-btn" onClick={() => setIsSidebarOpen(true)}>
+                        <span className="material-symbols-outlined">menu</span>
+                    </button>
+                    <div className="header-logo" onClick={() => navigate('/')}>
+                        <span className="logo-dot"></span>
+                        <h1>{getTitle()}</h1>
+                    </div>
                 </div>
                 <div className="header-actions">
                     <button
@@ -34,6 +42,7 @@ export function Header() {
                     {/* Settings icon removed as requested - moved to bottom nav */}
                 </div>
             </div>
+            <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
         </header>
     );
 }
