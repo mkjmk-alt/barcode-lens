@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { getScanHistory, clearScanHistory } from '../utils/helpers';
 import type { ScanHistoryItem } from '../utils/helpers';
@@ -6,6 +7,7 @@ import { WhitespaceInspector } from '../components/WhitespaceInspector';
 import './TestPage.css';
 
 export function TestPage() {
+    const navigate = useNavigate();
     const { t } = useTranslation();
     const [history, setHistory] = useState<ScanHistoryItem[]>([]);
 
@@ -20,7 +22,15 @@ export function TestPage() {
         }
     };
 
-    const copyToClipboard = async (text: string) => {
+    const handleItemClick = (value: string) => {
+        // Remove all whitespaces
+        const cleanedValue = value.replace(/\s+/g, '');
+        // Navigate to generate page with cleaned value
+        navigate(`/?value=${encodeURIComponent(cleanedValue)}`);
+    };
+
+    const copyToClipboard = async (e: React.MouseEvent, text: string) => {
+        e.stopPropagation(); // Prevent navigation when clicking copy button
         await navigator.clipboard.writeText(text);
         alert(t.generate.copied);
     };
@@ -46,7 +56,11 @@ export function TestPage() {
 
             <div className="history-list mt-3">
                 {history.map((item) => (
-                    <div key={item.id} className="history-card card mb-2">
+                    <div
+                        key={item.id}
+                        className="history-card card mb-2 clickable-card"
+                        onClick={() => handleItemClick(item.value)}
+                    >
                         <div className="history-card-top">
                             <div className="type-icon-box">
                                 <span className="material-symbols-outlined">
@@ -59,7 +73,7 @@ export function TestPage() {
                             </div>
                         </div>
                         <div className="history-card-actions mt-2">
-                            <button className="mini-btn" onClick={() => copyToClipboard(item.value)}>
+                            <button className="mini-btn" onClick={(e) => copyToClipboard(e, item.value)}>
                                 <span className="material-symbols-outlined">content_copy</span>
                             </button>
                         </div>

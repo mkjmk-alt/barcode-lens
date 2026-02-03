@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
 import {
     generateBarcode,
     generateQRCode,
@@ -20,15 +21,31 @@ const BARCODE_TYPES: { value: BarcodeType; label: string }[] = [
 
 export function GeneratePage() {
     const { t } = useTranslation();
+    const [searchParams, setSearchParams] = useSearchParams();
     const [inputText, setInputText] = useState('');
     const [barcodeType, setBarcodeType] = useState<BarcodeType>('CODE128');
     const [barcodeImage, setBarcodeImage] = useState<string | null>(null);
     const [history, setHistory] = useState<ScanHistoryItem[]>([]);
     const [error, setError] = useState('');
+    const initialEffectRef = useRef(false);
 
     useEffect(() => {
         setHistory(getScanHistory());
-    }, []);
+
+        const queryValue = searchParams.get('value');
+        if (queryValue && !initialEffectRef.current) {
+            setInputText(queryValue);
+            initialEffectRef.current = true;
+            // Trigger generation after state update
+            setTimeout(() => {
+                const btn = document.getElementById('generate-btn');
+                btn?.click();
+            }, 100);
+
+            // Clean up SearchParams to prevent re-triggering on refresh if state is kept
+            setSearchParams({}, { replace: true });
+        }
+    }, [searchParams, setSearchParams]);
 
     const handleGenerate = async () => {
         if (!inputText.trim()) {
@@ -100,7 +117,7 @@ export function GeneratePage() {
                     ))}
                 </div>
 
-                <button className="btn btn-primary mt-3" onClick={handleGenerate}>
+                <button id="generate-btn" className="btn btn-primary mt-3" onClick={handleGenerate}>
                     <span className="material-symbols-outlined">add</span>
                     {t.generate.btnGenerate}
                 </button>

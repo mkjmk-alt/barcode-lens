@@ -23,6 +23,21 @@
     padding: 16px;
     display: flex;
     flex-direction: column;
+    transition: var(--transition);
+}
+
+.clickable-card {
+    cursor: pointer;
+}
+
+.clickable-card:hover {
+    background: var(--bg-secondary);
+    transform: translateY(-2px);
+    border-color: var(--accent);
+}
+
+.clickable-card:active {
+    transform: translateY(0);
 }
 
 .history-card-top {

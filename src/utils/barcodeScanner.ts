@@ -401,7 +401,7 @@ export class BarcodeScanner {
             // Config with videoConstraints for iOS Safari 1920x1080 support
             const scanConfig = {
                 fps: 10,
-                qrbox: { width: 250, height: 250 },
+                qrbox: { width: 280, height: 280 },
                 videoConstraints: {
                     width: { ideal: 1920 },
                     height: { ideal: 1080 },
@@ -443,7 +443,7 @@ export class BarcodeScanner {
 
                 const fallbackConfig = {
                     fps: 10,
-                    qrbox: { width: 250, height: 250 }
+                    qrbox: { width: 280, height: 280 },
                 };
 
                 await this.html5QrCode.start(
