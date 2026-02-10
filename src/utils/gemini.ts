@@ -12,7 +12,7 @@ export async function chatWithGemini(userMessage: string, category: '로켓배�
         throw new Error("Gemini API Key가 설정되지 않았습니다. 설정에서 API 키를 등록해주세요.");
     }
 
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-lite" });
 
     // Mapping titles to requested display names
     const titleMapping: Record<string, string> = {
