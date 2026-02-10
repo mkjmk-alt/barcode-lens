@@ -24,7 +24,7 @@ export function ScanPage() {
                     await scannerRef.current.start(
                         (result: any) => {
                             addScanToHistory(result.text, result.format);
-                            navigate('/ai', { state: { autoQuery: `바코드 ${result.text}에 대해 분석해줘` } });
+                            navigate('/test');
                         },
                         (err: string) => {
                             setError(err);
@@ -46,7 +46,7 @@ export function ScanPage() {
         const response = await scanImageFile(file);
         if (response.success && response.result) {
             addScanToHistory(response.result.text, response.result.format);
-            navigate('/ai', { state: { autoQuery: `바코드 ${response.result.text}에 대해 분석해줘` } });
+            navigate('/test');
         } else {
             setError(t.scan.errorRecognition);
         }
