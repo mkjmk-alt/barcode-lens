@@ -16,16 +16,6 @@ export function AiAssistantPage() {
     const [input, setInput] = useState('');
     const [isThinking, setIsThinking] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [apiKey, setApiKey] = useState(localStorage.getItem('GEMINI_API_KEY') || '');
-    const [showKeyInput, setShowKeyInput] = useState(!localStorage.getItem('GEMINI_API_KEY'));
-
-    const handleSaveKey = () => {
-        if (apiKey.trim()) {
-            localStorage.setItem('GEMINI_API_KEY', apiKey.trim());
-            setShowKeyInput(false);
-            window.location.reload(); // Reload to initialize Gemini with new key
-        }
-    };
 
     const handleSend = useCallback(async (query: string) => {
         if (!query.trim() || isThinking) return;
@@ -72,31 +62,7 @@ export function AiAssistantPage() {
                     <h2>{t.ai.title} (KB v2.0)</h2>
                     <p className="text-secondary">보안된 내부 지식 베이스를 기반으로 답변합니다.</p>
                 </div>
-                <button className="btn btn-icon btn-ghost" onClick={() => setShowKeyInput(!showKeyInput)}>
-                    <span className="material-symbols-outlined">key</span>
-                </button>
             </div>
-
-            {showKeyInput && (
-                <div className="api-key-config glass-card mb-3 animate-slide-down">
-                    <h4>Gemini API 설정</h4>
-                    <p className="text-small text-secondary">
-                        이 기능은 Google Gemini Pro를 사용합니다.
-                        <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer"> AI Studio</a>에서
-                        발급받은 API 키를 입력하세요.
-                    </p>
-                    <div className="d-flex gap-2">
-                        <input
-                            type="password"
-                            className="input-field"
-                            placeholder="AI Studio API Key"
-                            value={apiKey}
-                            onChange={(e) => setApiKey(e.target.value)}
-                        />
-                        <button className="btn btn-primary" onClick={handleSaveKey}>저장</button>
-                    </div>
-                </div>
-            )}
 
             <div className="ai-chat-container glass-card">
                 <div className="chat-history">
@@ -139,7 +105,7 @@ export function AiAssistantPage() {
                     <button
                         className="btn btn-primary btn-icon"
                         onClick={onManualSend}
-                        disabled={isThinking || !input.trim() || !localStorage.getItem('GEMINI_API_KEY')}
+                        disabled={isThinking || !input.trim()}
                     >
                         <span className="material-symbols-outlined">send</span>
                     </button>

@@ -12,7 +12,7 @@ export async function chatWithGemini(userMessage: string) {
         throw new Error("Gemini API Key가 설정되지 않았습니다. 설정에서 API 키를 등록해주세요.");
     }
 
-    const model = genAI.getGenerativeModel({ model: "gemini-3.0-flash-preview" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
     // Combine grounding documents into context
     const context = GROUNDING_DOCUMENTS.map(doc => `[파일 이름: ${doc.title}]\n${doc.content}`).join("\n\n");
