@@ -268,6 +268,7 @@ export class NativeBarcodeScanner {
         const track = this.stream.getVideoTracks()[0];
         if (!track) return;
 
+        let hardwareZoomSuccess = false;
         try {
             const capabilities = track.getCapabilities() as any;
             if (capabilities.zoom) {
@@ -275,9 +276,20 @@ export class NativeBarcodeScanner {
                 await track.applyConstraints({
                     advanced: [{ zoom: zoomVal } as any]
                 });
+                hardwareZoomSuccess = true;
             }
         } catch (err) {
-            console.error('Zoom applying failed:', err);
+            console.error('Native hardware zoom failed:', err);
+        }
+
+        // Digital zoom fallback if hardware zoom is not supported or failed
+        if (this.videoElement) {
+            if (hardwareZoomSuccess) {
+                this.videoElement.style.transform = 'scale(1)';
+            } else {
+                this.videoElement.style.transform = `scale(${zoom})`;
+                this.videoElement.style.transformOrigin = 'center';
+            }
         }
     }
 
@@ -315,16 +327,16 @@ export class NativeBarcodeScanner {
         return this.torchEnabled;
     }
 
-    // 토치 지원 여부 확인
-    async isTorchSupported(): Promise<boolean> {
+    // 줌 지원 여부 확인
+    async isZoomSupported(): Promise<boolean> {
         if (!this.stream) return false;
 
         const track = this.stream.getVideoTracks()[0];
         if (!track) return false;
 
         try {
-            const capabilities = track.getCapabilities() as MediaTrackCapabilities & { torch?: boolean };
-            return !!capabilities.torch;
+            const capabilities = track.getCapabilities() as any;
+            return !!capabilities.zoom;
         } catch {
             return false;
         }
@@ -521,6 +533,8 @@ export class BarcodeScanner {
         try {
             // @ts-ignore - access internal track
             const track = (this.html5QrCode as any).getRunningTrack();
+            let hardwareZoomSuccess = false;
+
             if (track) {
                 const capabilities = track.getCapabilities() as any;
                 if (capabilities.zoom) {
@@ -528,10 +542,38 @@ export class BarcodeScanner {
                     await track.applyConstraints({
                         advanced: [{ zoom: zoomVal } as any]
                     });
+                    hardwareZoomSuccess = true;
+                }
+            }
+
+            // Digital zoom fallback
+            const container = document.getElementById(this.containerId);
+            const video = container?.querySelector('video');
+            if (video) {
+                if (hardwareZoomSuccess) {
+                    video.style.transform = 'scale(1)';
+                } else {
+                    video.style.transform = `scale(${zoom})`;
+                    video.style.transformOrigin = 'center';
                 }
             }
         } catch (err) {
             console.error('Html5Qrcode zoom failed:', err);
+        }
+    }
+
+    async isZoomSupported(): Promise<boolean> {
+        if (!this.html5QrCode || !this.isScanning) return false;
+        try {
+            // @ts-ignore
+            const track = (this.html5QrCode as any).getRunningTrack();
+            if (track) {
+                const capabilities = track.getCapabilities() as any;
+                return !!capabilities.zoom;
+            }
+            return false;
+        } catch {
+            return false;
         }
     }
 

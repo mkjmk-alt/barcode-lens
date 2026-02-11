@@ -8,8 +8,9 @@ import './ScanPage.css';
 export function ScanPage() {
     const { t } = useTranslation();
     const [torchEnabled, setTorchEnabled] = useState(false);
-    const [zoomLevel, setZoomLevel] = useState(1);
     const [hasTorch, setHasTorch] = useState(false);
+    const [zoomLevel, setZoomLevel] = useState(1);
+    const [maxZoom, setMaxZoom] = useState(5);
     const [isScanning, setIsScanning] = useState(false);
     const [error, setError] = useState('');
     const scannerRef = useRef<any>(null);
@@ -39,6 +40,29 @@ export function ScanPage() {
                     if (scannerRef.current.isTorchSupported) {
                         const supported = await scannerRef.current.isTorchSupported();
                         setHasTorch(supported);
+                    }
+
+                    // Check for zoom support and range
+                    if (scannerRef.current.isZoomSupported) {
+                        await scannerRef.current.isZoomSupported();
+
+                        // Try to get actual hardware zoom range
+                        try {
+                            // @ts-ignore
+                            const track = scannerRef.current.stream?.getVideoTracks()[0] || (scannerRef.current.html5QrCode?.getRunningTrack());
+                            if (track) {
+                                const capabilities = track.getCapabilities() as any;
+                                if (capabilities.zoom) {
+                                    setMaxZoom(capabilities.zoom.max);
+                                }
+                            }
+                        } catch (e) {
+                            // Default to 5 if range detection fails
+                            setMaxZoom(5);
+                        }
+                    } else {
+                        // Even if hardware zoom not supported, we use digital zoom CSS fallback
+                        setMaxZoom(5);
                     }
                 }
             } catch (e) {
@@ -120,7 +144,7 @@ export function ScanPage() {
                         <input
                             type="range"
                             min="1"
-                            max="5"
+                            max={maxZoom}
                             step="0.1"
                             value={zoomLevel}
                             onChange={handleZoom}
