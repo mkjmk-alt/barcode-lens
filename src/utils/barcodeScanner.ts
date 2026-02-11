@@ -215,8 +215,10 @@ export class NativeBarcodeScanner {
 
         const constraints: MediaStreamConstraints = {
             video: deviceId
-                ? { deviceId: { exact: deviceId }, width: { ideal: 1920 }, height: { ideal: 1080 } }
-                : { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } }
+                // @ts-ignore
+                ? { deviceId: { exact: deviceId }, width: { ideal: 1920 }, height: { ideal: 1080 }, focusMode: 'continuous' }
+                // @ts-ignore
+                : { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 }, focusMode: 'continuous' }
         };
 
         try {
@@ -428,12 +430,17 @@ export class BarcodeScanner {
 
             // Config with videoConstraints for iOS Safari 1920x1080 support
             const scanConfig = {
-                fps: 10,
+                fps: 25,
                 qrbox: { width: 280, height: 280 },
+                experimentalFeatures: {
+                    useBarCodeDetectorIfSupported: true
+                },
                 videoConstraints: {
                     width: { ideal: 1920 },
                     height: { ideal: 1080 },
-                    facingMode: "environment"
+                    facingMode: "environment",
+                    // @ts-ignore
+                    focusMode: "continuous"
                 }
             };
 
@@ -470,8 +477,11 @@ export class BarcodeScanner {
                 });
 
                 const fallbackConfig = {
-                    fps: 10,
+                    fps: 25,
                     qrbox: { width: 280, height: 280 },
+                    experimentalFeatures: {
+                        useBarCodeDetectorIfSupported: true
+                    }
                 };
 
                 await this.html5QrCode.start(
