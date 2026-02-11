@@ -271,11 +271,15 @@ export class NativeBarcodeScanner {
         let hardwareZoomSuccess = false;
         try {
             const capabilities = track.getCapabilities() as any;
-            if (capabilities.zoom) {
+            // Safari often doesn't report zoom capabilities even if it might support it in the future,
+            // or reports it but ignores applyConstraints.
+            if (capabilities && capabilities.zoom) {
                 const zoomVal = Math.min(capabilities.zoom.max, Math.max(capabilities.zoom.min, zoom));
                 await track.applyConstraints({
                     advanced: [{ zoom: zoomVal } as any]
                 });
+                // Note: On some devices, applyConstraints returns success but does nothing. 
+                // We'll trust it for now, but digital zoom is our reliable fallback.
                 hardwareZoomSuccess = true;
             }
         } catch (err) {
@@ -284,11 +288,16 @@ export class NativeBarcodeScanner {
 
         // Digital zoom fallback if hardware zoom is not supported or failed
         if (this.videoElement) {
+            const videoStyle = this.videoElement.style;
             if (hardwareZoomSuccess) {
-                this.videoElement.style.transform = 'scale(1)';
+                videoStyle.transform = 'scale(1)';
+                (videoStyle as any).webkitTransform = 'scale(1)';
             } else {
-                this.videoElement.style.transform = `scale(${zoom})`;
-                this.videoElement.style.transformOrigin = 'center';
+                // translateZ(0) enables hardware acceleration in Safari
+                const transformStr = `scale(${zoom}) translateZ(0)`;
+                videoStyle.transform = transformStr;
+                (videoStyle as any).webkitTransform = transformStr;
+                videoStyle.transformOrigin = 'center';
             }
         }
     }
@@ -537,7 +546,7 @@ export class BarcodeScanner {
 
             if (track) {
                 const capabilities = track.getCapabilities() as any;
-                if (capabilities.zoom) {
+                if (capabilities && capabilities.zoom) {
                     const zoomVal = Math.min(capabilities.zoom.max, Math.max(capabilities.zoom.min, zoom));
                     await track.applyConstraints({
                         advanced: [{ zoom: zoomVal } as any]
@@ -550,11 +559,20 @@ export class BarcodeScanner {
             const container = document.getElementById(this.containerId);
             const video = container?.querySelector('video');
             if (video) {
+                const videoStyle = video.style;
                 if (hardwareZoomSuccess) {
-                    video.style.transform = 'scale(1)';
+                    videoStyle.transform = 'scale(1)';
+                    (videoStyle as any).webkitTransform = 'scale(1)';
                 } else {
-                    video.style.transform = `scale(${zoom})`;
-                    video.style.transformOrigin = 'center';
+                    const transformStr = `scale(${zoom}) translateZ(0)`;
+                    videoStyle.transform = transformStr;
+                    (videoStyle as any).webkitTransform = transformStr;
+                    videoStyle.transformOrigin = 'center';
+
+                    // Safari compatibility: Ensure parent container doesn't clip or behave weirdly
+                    if (video.parentElement) {
+                        video.parentElement.style.overflow = 'hidden';
+                    }
                 }
             }
         } catch (err) {
