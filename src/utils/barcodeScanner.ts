@@ -278,26 +278,27 @@ export class NativeBarcodeScanner {
                 await track.applyConstraints({
                     advanced: [{ zoom: zoomVal } as any]
                 });
-                // Note: On some devices, applyConstraints returns success but does nothing. 
-                // We'll trust it for now, but digital zoom is our reliable fallback.
                 hardwareZoomSuccess = true;
             }
         } catch (err) {
             console.error('Native hardware zoom failed:', err);
         }
 
-        // Digital zoom fallback if hardware zoom is not supported or failed
+        // Digital zoom fallback
         if (this.videoElement) {
             const videoStyle = this.videoElement.style;
             if (hardwareZoomSuccess) {
-                videoStyle.transform = 'scale(1)';
-                (videoStyle as any).webkitTransform = 'scale(1)';
+                videoStyle.transform = 'scale3d(1, 1, 1)';
+                (videoStyle as any).webkitTransform = 'scale3d(1, 1, 1)';
             } else {
-                // translateZ(0) enables hardware acceleration in Safari
-                const transformStr = `scale(${zoom}) translateZ(0)`;
+                const transformStr = `scale3d(${zoom}, ${zoom}, 1)`;
                 videoStyle.transform = transformStr;
                 (videoStyle as any).webkitTransform = transformStr;
                 videoStyle.transformOrigin = 'center';
+
+                if (this.videoElement.parentElement) {
+                    this.videoElement.parentElement.style.overflow = 'hidden';
+                }
             }
         }
     }
@@ -334,6 +335,22 @@ export class NativeBarcodeScanner {
 
     getTorchEnabled(): boolean {
         return this.torchEnabled;
+    }
+
+    // 토치 지원 여부 확인
+    async isTorchSupported(): Promise<boolean> {
+        if (!this.stream) return false;
+
+        const track = this.stream.getVideoTracks()[0];
+        if (!track) return false;
+
+        try {
+            const capabilities = track.getCapabilities() as any;
+            const constraints = navigator.mediaDevices.getSupportedConstraints() as any;
+            return !!capabilities.torch || !!constraints.torch;
+        } catch {
+            return false;
+        }
     }
 
     // 줌 지원 여부 확인
@@ -561,10 +578,10 @@ export class BarcodeScanner {
             if (video) {
                 const videoStyle = video.style;
                 if (hardwareZoomSuccess) {
-                    videoStyle.transform = 'scale(1)';
-                    (videoStyle as any).webkitTransform = 'scale(1)';
+                    videoStyle.transform = 'scale3d(1, 1, 1)';
+                    (videoStyle as any).webkitTransform = 'scale3d(1, 1, 1)';
                 } else {
-                    const transformStr = `scale(${zoom}) translateZ(0)`;
+                    const transformStr = `scale3d(${zoom}, ${zoom}, 1)`;
                     videoStyle.transform = transformStr;
                     (videoStyle as any).webkitTransform = transformStr;
                     videoStyle.transformOrigin = 'center';
