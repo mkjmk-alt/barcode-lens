@@ -103,7 +103,18 @@ export const translations = {
             tipTitle: '입고 꿀팁',
             tip1: '연월일(YYYY.MM.DD) 표기가 원칙입니다.',
             tip2: '연월(YYYY.MM) 표기 시 해당 월의 1일로 간주합니다.',
-            tip3: '입고 시점 기준으로 잔여 기간을 계산합니다.'
+            tip3: '입고 시점 기준으로 잔여 기간을 계산합니다.',
+            validatorTitle: '실시간 소비기한 판정기',
+            physicalLabel: '실물 상품 소비기한',
+            systemLabel: '시스템 입력 기한',
+            stickerCovered: '스티커 가림 부착 여부',
+            btnCheck: '판정하기',
+            resultPass: '✅ 입고 가능',
+            resultFail: '❌ 회송 대상',
+            reasonShort: '실물 기한이 시스템 정보보다 짧음',
+            reasonSticker: '소비기한 표시를 스티커로 가림',
+            reasonBoth: '기한 부족 및 스티커 가림',
+            strictNotice: '단 하루라도 짧으면 회송 처리되므로 주의하세요.'
         }
     },
     en: {
@@ -208,7 +219,18 @@ export const translations = {
             tipTitle: 'Quick Tips',
             tip1: 'YYYY.MM.DD format is required.',
             tip2: 'YYYY.MM is treated as the 1st of the month.',
-            tip3: 'Remaining period is based on the arrival date.'
+            tip3: 'Remaining period is based on the arrival date.',
+            validatorTitle: 'Real-time Expiry Validator',
+            physicalLabel: 'Physical Expiry Date',
+            systemLabel: 'System Registered Date',
+            stickerCovered: 'Sticker Covered?',
+            btnCheck: 'Validate',
+            resultPass: '✅ Pass',
+            resultFail: '❌ Return',
+            reasonShort: 'Physical expiry is shorter than system info',
+            reasonSticker: 'Expiry date is covered by sticker',
+            reasonBoth: 'Shorter expiry & Sticker covered',
+            strictNotice: 'Even one day shorter results in a return.'
         }
     }
 };

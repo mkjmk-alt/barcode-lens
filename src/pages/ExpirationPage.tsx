@@ -1,14 +1,88 @@
+import { useState, useMemo } from 'react';
 import { useTranslation } from '../utils/LanguageContext';
 import './ExpirationPage.css';
 
 export function ExpirationPage() {
     const { t } = useTranslation();
+    const [physicalDate, setPhysicalDate] = useState('');
+    const [systemDate, setSystemDate] = useState('');
+    const [isStickerCovered, setIsStickerCovered] = useState(false);
+
+    const validationResult = useMemo(() => {
+        if (!physicalDate || !systemDate) return null;
+
+        const pDate = new Date(physicalDate);
+        const sDate = new Date(systemDate);
+
+        // Normalize to midnight for fair comparison
+        pDate.setHours(0, 0, 0, 0);
+        sDate.setHours(0, 0, 0, 0);
+
+        const isShorter = pDate < sDate;
+
+        if (isShorter && isStickerCovered) return { status: 'fail', reason: t.expiration.reasonBoth };
+        if (isShorter) return { status: 'fail', reason: t.expiration.reasonShort };
+        if (isStickerCovered) return { status: 'fail', reason: t.expiration.reasonSticker };
+
+        return { status: 'pass', reason: t.expiration.resultPass };
+    }, [physicalDate, systemDate, isStickerCovered, t.expiration]);
 
     return (
         <div className="expiration-page container animate-fade">
             <section className="hero-section">
                 <h2>{t.expiration.title}</h2>
                 <p className="text-muted">{t.expiration.sub}</p>
+            </section>
+
+            {/* NEW: Expiration Validator Section */}
+            <section className="validator-section mt-4 glass-card">
+                <div className="section-header">
+                    <span className="material-symbols-outlined emoji">verified_user</span>
+                    <h3>{t.expiration.validatorTitle}</h3>
+                </div>
+                <div className="validator-grid mt-3">
+                    <div className="input-group">
+                        <label className="info-label">{t.expiration.physicalLabel}</label>
+                        <input
+                            type="date"
+                            className="input-field"
+                            value={physicalDate}
+                            onChange={(e) => setPhysicalDate(e.target.value)}
+                        />
+                    </div>
+                    <div className="input-group">
+                        <label className="info-label">{t.expiration.systemLabel}</label>
+                        <input
+                            type="date"
+                            className="input-field"
+                            value={systemDate}
+                            onChange={(e) => setSystemDate(e.target.value)}
+                        />
+                    </div>
+                    <div className="input-group checkbox-group">
+                        <label className="checkbox-container">
+                            <input
+                                type="checkbox"
+                                checked={isStickerCovered}
+                                onChange={(e) => setIsStickerCovered(e.target.checked)}
+                            />
+                            <span className="checkmark"></span>
+                            {t.expiration.stickerCovered}
+                        </label>
+                    </div>
+                </div>
+
+                {validationResult && (
+                    <div className={`result-box mt-3 ${validationResult.status}`}>
+                        <div className="result-header">
+                            {validationResult.status === 'pass' ? t.expiration.resultPass : t.expiration.resultFail}
+                        </div>
+                        <p className="result-reason">{validationResult.reason}</p>
+                        {validationResult.status === 'fail' && (
+                            <p className="strict-notice mt-1">⚠️ {t.expiration.strictNotice}</p>
+                        )}
+                    </div>
+                )}
             </section>
 
             <div className="expiration-grid mt-4">
