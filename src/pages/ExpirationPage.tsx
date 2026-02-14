@@ -4,9 +4,49 @@ import './ExpirationPage.css';
 
 export function ExpirationPage() {
     const { t } = useTranslation();
+
+    // Mfg Validator State
+    const [mfgPhysicalDate, setMfgPhysicalDate] = useState('');
+    const [mfgSystemDate, setMfgSystemDate] = useState('');
+    const [mfgCategory, setMfgCategory] = useState('diaper_dom');
+
+    // Expiry Validator State
     const [physicalDate, setPhysicalDate] = useState('');
     const [systemDate, setSystemDate] = useState('');
     const [isStickerCovered, setIsStickerCovered] = useState(false);
+
+    const mfgValidationResult = useMemo(() => {
+        if (!mfgPhysicalDate || !mfgSystemDate) return null;
+
+        const pDate = new Date(mfgPhysicalDate);
+        const sDate = new Date(mfgSystemDate);
+        const today = new Date();
+
+        pDate.setHours(0, 0, 0, 0);
+        sDate.setHours(0, 0, 0, 0);
+        today.setHours(0, 0, 0, 0);
+
+        // 1. Mismatch check
+        if (pDate.getTime() !== sDate.getTime()) {
+            return { status: 'fail', reason: t.expiration.mfgReasonMismatch };
+        }
+
+        // 2. Range check
+        const diffMs = today.getTime() - pDate.getTime();
+        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+        let limitDays = 365; // Default for diaper_dom
+        if (mfgCategory === 'diaper_imp') limitDays = 450; // 15 months
+        else if (mfgCategory === 'pet_wipes') limitDays = 240; // 8 months
+        else if (mfgCategory === 'grains') limitDays = 14;
+        else if (mfgCategory === 'rice') limitDays = 7;
+
+        if (diffDays > limitDays) {
+            return { status: 'fail', reason: `${t.expiration.mfgReasonExpired} (${limitDays}일 초과)` };
+        }
+
+        return { status: 'pass', reason: t.expiration.resultPass };
+    }, [mfgPhysicalDate, mfgSystemDate, mfgCategory, t.expiration]);
 
     const validationResult = useMemo(() => {
         if (!physicalDate || !systemDate) return null;
@@ -14,7 +54,6 @@ export function ExpirationPage() {
         const pDate = new Date(physicalDate);
         const sDate = new Date(systemDate);
 
-        // Normalize to midnight for fair comparison
         pDate.setHours(0, 0, 0, 0);
         sDate.setHours(0, 0, 0, 0);
 
@@ -34,56 +73,109 @@ export function ExpirationPage() {
                 <p className="text-muted">{t.expiration.sub}</p>
             </section>
 
-            {/* NEW: Expiration Validator Section */}
-            <section className="validator-section mt-4 glass-card">
-                <div className="section-header">
-                    <span className="material-symbols-outlined emoji">verified_user</span>
-                    <h3>{t.expiration.validatorTitle}</h3>
-                </div>
-                <div className="validator-grid mt-3">
-                    <div className="input-group">
-                        <label className="info-label">{t.expiration.physicalLabel}</label>
-                        <input
-                            type="date"
-                            className="input-field"
-                            value={physicalDate}
-                            onChange={(e) => setPhysicalDate(e.target.value)}
-                        />
+            <div className="validators-stack">
+                {/* NEW: Manufacturing Date Validator */}
+                <section className="validator-section mt-4 glass-card">
+                    <div className="section-header">
+                        <span className="material-symbols-outlined emoji">precision_manufacturing</span>
+                        <h3>{t.expiration.mfgValidatorTitle}</h3>
                     </div>
-                    <div className="input-group">
-                        <label className="info-label">{t.expiration.systemLabel}</label>
-                        <input
-                            type="date"
-                            className="input-field"
-                            value={systemDate}
-                            onChange={(e) => setSystemDate(e.target.value)}
-                        />
-                    </div>
-                    <div className="input-group checkbox-group">
-                        <label className="checkbox-container">
-                            <input
-                                type="checkbox"
-                                checked={isStickerCovered}
-                                onChange={(e) => setIsStickerCovered(e.target.checked)}
-                            />
-                            <span className="checkmark"></span>
-                            {t.expiration.stickerCovered}
-                        </label>
-                    </div>
-                </div>
-
-                {validationResult && (
-                    <div className={`result-box mt-3 ${validationResult.status}`}>
-                        <div className="result-header">
-                            {validationResult.status === 'pass' ? t.expiration.resultPass : t.expiration.resultFail}
+                    <div className="validator-grid mt-3">
+                        <div className="input-group">
+                            <label className="info-label">{t.expiration.mfgCategoryLabel}</label>
+                            <select
+                                className="input-field"
+                                value={mfgCategory}
+                                onChange={(e) => setMfgCategory(e.target.value)}
+                            >
+                                <option value="diaper_dom">기저귀/물티슈 (국내 - 12개월)</option>
+                                <option value="diaper_imp">기저귀/물티슈 (수입 - 15개월)</option>
+                                <option value="pet_wipes">Pet 물티슈 (240일)</option>
+                                <option value="grains">잡곡 (14일)</option>
+                                <option value="rice">쌀 (7일)</option>
+                            </select>
                         </div>
-                        <p className="result-reason">{validationResult.reason}</p>
-                        {validationResult.status === 'fail' && (
-                            <p className="strict-notice mt-1">⚠️ {t.expiration.strictNotice}</p>
-                        )}
+                        <div className="input-group">
+                            <label className="info-label">{t.expiration.mfgPhysicalLabel}</label>
+                            <input
+                                type="date"
+                                className="input-field"
+                                value={mfgPhysicalDate}
+                                onChange={(e) => setMfgPhysicalDate(e.target.value)}
+                            />
+                        </div>
+                        <div className="input-group">
+                            <label className="info-label">{t.expiration.mfgSystemLabel}</label>
+                            <input
+                                type="date"
+                                className="input-field"
+                                value={mfgSystemDate}
+                                onChange={(e) => setMfgSystemDate(e.target.value)}
+                            />
+                        </div>
                     </div>
-                )}
-            </section>
+
+                    {mfgValidationResult && (
+                        <div className={`result-box mt-3 ${mfgValidationResult.status}`}>
+                            <div className="result-header">
+                                {mfgValidationResult.status === 'pass' ? t.expiration.resultPass : t.expiration.resultFail}
+                            </div>
+                            <p className="result-reason">{mfgValidationResult.reason}</p>
+                        </div>
+                    )}
+                </section>
+
+                {/* Expiration Validator Section */}
+                <section className="validator-section mt-4 glass-card">
+                    <div className="section-header">
+                        <span className="material-symbols-outlined emoji">verified_user</span>
+                        <h3>{t.expiration.validatorTitle}</h3>
+                    </div>
+                    <div className="validator-grid mt-3">
+                        <div className="input-group">
+                            <label className="info-label">{t.expiration.physicalLabel}</label>
+                            <input
+                                type="date"
+                                className="input-field"
+                                value={physicalDate}
+                                onChange={(e) => setPhysicalDate(e.target.value)}
+                            />
+                        </div>
+                        <div className="input-group">
+                            <label className="info-label">{t.expiration.systemLabel}</label>
+                            <input
+                                type="date"
+                                className="input-field"
+                                value={systemDate}
+                                onChange={(e) => setSystemDate(e.target.value)}
+                            />
+                        </div>
+                        <div className="input-group checkbox-group">
+                            <label className="checkbox-container">
+                                <input
+                                    type="checkbox"
+                                    checked={isStickerCovered}
+                                    onChange={(e) => setIsStickerCovered(e.target.checked)}
+                                />
+                                <span className="checkmark"></span>
+                                {t.expiration.stickerCovered}
+                            </label>
+                        </div>
+                    </div>
+
+                    {validationResult && (
+                        <div className={`result-box mt-3 ${validationResult.status}`}>
+                            <div className="result-header">
+                                {validationResult.status === 'pass' ? t.expiration.resultPass : t.expiration.resultFail}
+                            </div>
+                            <p className="result-reason">{validationResult.reason}</p>
+                            {validationResult.status === 'fail' && (
+                                <p className="strict-notice mt-1">⚠️ {t.expiration.strictNotice}</p>
+                            )}
+                        </div>
+                    )}
+                </section>
+            </div>
 
             <div className="expiration-grid mt-4">
                 {/* Domestic & Imported Card */}

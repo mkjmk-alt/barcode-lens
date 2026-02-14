@@ -107,14 +107,20 @@ export const translations = {
             validatorTitle: '실시간 소비기한 판정기',
             physicalLabel: '실물 상품 소비기한',
             systemLabel: '시스템 입력 기한',
-            stickerCovered: '스티커 가림 부착 여부',
+            stickerCovered: '실물의 소비기한 가려짐 여부',
             btnCheck: '판정하기',
             resultPass: '✅ 입고 가능',
             resultFail: '❌ 회송 대상',
             reasonShort: '실물 기한이 시스템 정보보다 짧음',
-            reasonSticker: '소비기한 표시를 스티커로 가림',
-            reasonBoth: '기한 부족 및 스티커 가림',
-            strictNotice: '단 하루라도 짧으면 회송 처리되므로 주의하세요.'
+            reasonSticker: '소비기한 표시가 가려져 있음 (스티커 등)',
+            reasonBoth: '기한 부족 및 표시 가려짐',
+            strictNotice: '단 하루라도 짧으면 회송 처리되므로 주의하세요.',
+            mfgValidatorTitle: '실시간 제조일자 판정기',
+            mfgPhysicalLabel: '실물 제조일자',
+            mfgSystemLabel: '시스템 입력 제조일자',
+            mfgCategoryLabel: '상품 카테고리',
+            mfgReasonMismatch: '실물 제조일자가 시스템 정보와 불일치',
+            mfgReasonExpired: '제조일자 입고 기준(기간) 초과'
         }
     },
     en: {
@@ -223,14 +229,20 @@ export const translations = {
             validatorTitle: 'Real-time Expiry Validator',
             physicalLabel: 'Physical Expiry Date',
             systemLabel: 'System Registered Date',
-            stickerCovered: 'Sticker Covered?',
+            stickerCovered: 'Is Expiry Date Obscured?',
             btnCheck: 'Validate',
             resultPass: '✅ Pass',
             resultFail: '❌ Return',
             reasonShort: 'Physical expiry is shorter than system info',
-            reasonSticker: 'Expiry date is covered by sticker',
-            reasonBoth: 'Shorter expiry & Sticker covered',
-            strictNotice: 'Even one day shorter results in a return.'
+            reasonSticker: 'Expiry date is obscured (sticker, etc.)',
+            reasonBoth: 'Shorter expiry & Obscured',
+            strictNotice: 'Even one day shorter results in a return.',
+            mfgValidatorTitle: 'Real-time Mfg. Date Validator',
+            mfgPhysicalLabel: 'Physical Mfg. Date',
+            mfgSystemLabel: 'System Registered Mfg. Date',
+            mfgCategoryLabel: 'Product Category',
+            mfgReasonMismatch: 'Mfg. date mismatch with system info',
+            mfgReasonExpired: 'Mfg. date outside allowed window'
         }
     }
 };
